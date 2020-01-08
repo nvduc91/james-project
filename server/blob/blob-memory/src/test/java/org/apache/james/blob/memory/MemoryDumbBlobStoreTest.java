@@ -16,31 +16,24 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  ****************************************************************/
-package org.apache.james.blob.api;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+package org.apache.james.blob.memory;
 
-import com.google.common.io.ByteSource;
-import reactor.core.publisher.Mono;
+import org.apache.james.blob.api.DumbBlobStore;
+import org.apache.james.blob.api.DumbBlobStoreContract;
+import org.junit.jupiter.api.BeforeEach;
 
-public interface BlobStore {
+class MemoryDumbBlobStoreTest implements DumbBlobStoreContract {
 
-    Mono<BlobId> save(BucketName bucketName, byte[] data);
+    private MemoryDumbBlobStore blobStore;
 
-    Mono<BlobId> save(BucketName bucketName, InputStream data);
-
-    default Mono<BlobId> save(BucketName bucketName, String data) {
-        return save(bucketName, data.getBytes(StandardCharsets.UTF_8));
+    @BeforeEach
+    void setUp() {
+        blobStore = new MemoryDumbBlobStore();
     }
 
-    Mono<byte[]> readBytes(BucketName bucketName, BlobId blobId);
-
-    InputStream read(BucketName bucketName, BlobId blobId);
-
-    BucketName getDefaultBucketName();
-
-    Mono<Void> deleteBucket(BucketName bucketName);
-
-    Mono<Void> delete(BucketName bucketName, BlobId blobId);
+    @Override
+    public DumbBlobStore testee() {
+        return blobStore;
+    }
 }
