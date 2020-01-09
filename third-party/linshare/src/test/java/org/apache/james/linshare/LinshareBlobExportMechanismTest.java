@@ -36,6 +36,7 @@ import org.apache.james.blob.api.HashBlobId;
 import org.apache.james.blob.export.api.BlobExportMechanism;
 import org.apache.james.blob.export.api.FileExtension;
 import org.apache.james.blob.memory.MemoryBlobStore;
+import org.apache.james.blob.memory.MemoryDumbBlobStore;
 import org.apache.james.core.MailAddress;
 import org.apache.james.linshare.client.Document;
 import org.apache.james.linshare.client.LinshareAPI;
@@ -63,7 +64,7 @@ class LinshareBlobExportMechanismTest {
     @BeforeEach
     void setUp() throws Exception {
         blobIdFactory = new HashBlobId.Factory();
-        blobStore = new MemoryBlobStore(blobIdFactory);
+        blobStore = new MemoryBlobStore(blobIdFactory, new MemoryDumbBlobStore());
 
         testee = new LinshareBlobExportMechanism(
             linshareExtension.getAPIFor(USER_1),

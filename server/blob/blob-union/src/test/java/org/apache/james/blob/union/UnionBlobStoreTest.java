@@ -37,6 +37,7 @@ import org.apache.james.blob.api.BucketName;
 import org.apache.james.blob.api.HashBlobId;
 import org.apache.james.blob.api.ObjectStoreException;
 import org.apache.james.blob.memory.MemoryBlobStore;
+import org.apache.james.blob.memory.MemoryDumbBlobStore;
 import org.apache.james.util.StreamUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-
 import reactor.core.publisher.Mono;
 
 class UnionBlobStoreTest implements BlobStoreContract {
@@ -162,8 +162,8 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
     @BeforeEach
     void setup() {
-        currentBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
-        legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+        currentBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
+        legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
         unionBlobStore = UnionBlobStore.builder()
             .current(currentBlobStore)
             .legacy(legacyBlobStore)
@@ -185,7 +185,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveShouldFallBackToLegacyWhenCurrentGotException() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new ThrowingBlobStore())
                 .legacy(legacyBlobStore)
@@ -202,7 +202,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveInputStreamShouldFallBackToLegacyWhenCurrentGotException() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new ThrowingBlobStore())
                 .legacy(legacyBlobStore)
@@ -223,7 +223,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveShouldFallBackToLegacyWhenCurrentCompletedExceptionally() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new FailingBlobStore())
                 .legacy(legacyBlobStore)
@@ -240,7 +240,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveInputStreamShouldFallBackToLegacyWhenCurrentCompletedExceptionally() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new FailingBlobStore())
                 .legacy(legacyBlobStore)
@@ -262,7 +262,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void readShouldReturnFallbackToLegacyWhenCurrentGotException() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new ThrowingBlobStore())
                 .legacy(legacyBlobStore)
@@ -275,7 +275,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void readBytesShouldReturnFallbackToLegacyWhenCurrentGotException() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
 
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new ThrowingBlobStore())
@@ -294,7 +294,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void readShouldReturnFallbackToLegacyWhenCurrentCompletedExceptionally() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new FailingBlobStore())
                 .legacy(legacyBlobStore)
@@ -307,7 +307,7 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
         @Test
         void readBytesShouldReturnFallbackToLegacyWhenCurrentCompletedExceptionally() {
-            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY);
+            MemoryBlobStore legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, new MemoryDumbBlobStore());
             UnionBlobStore unionBlobStore = UnionBlobStore.builder()
                 .current(new FailingBlobStore())
                 .legacy(legacyBlobStore)
@@ -551,8 +551,8 @@ class UnionBlobStoreTest implements BlobStoreContract {
 
     @Test
     void getDefaultBucketNameShouldThrowWhenBlobStoreDontShareTheSameDefaultBucketName() {
-        currentBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, BucketName.of("current"));
-        legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, BucketName.of("legacy"));
+        currentBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, BucketName.of("current"), new MemoryDumbBlobStore());
+        legacyBlobStore = new MemoryBlobStore(BLOB_ID_FACTORY, BucketName.of("legacy"), new MemoryDumbBlobStore());
         unionBlobStore = UnionBlobStore.builder()
             .current(currentBlobStore)
             .legacy(legacyBlobStore)
