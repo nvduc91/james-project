@@ -36,10 +36,16 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.james.util.concurrency.ConcurrentTestRunner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.runners.Parameterized;
 
 import com.google.common.io.ByteSource;
 import reactor.core.publisher.Mono;
@@ -205,38 +211,40 @@ public interface ReadSaveDumbBlobStoreContract {
         assertThat(read).hasSameContentAs(new ByteArrayInputStream(TWELVE_MEGABYTES));
     }
 
-    @Test
-    default void saveBytesShouldOverwritePreviousData() {
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void saveBytesShouldBeIdempotent(byte[] bytes) {
         DumbBlobStore store = testee();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ELEVEN_KILOBYTES).block();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, SHORT_BYTEARRAY).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes).block();
 
         byte[] read = store.readBytes(TEST_BUCKET_NAME, TEST_BLOB_ID).block();
 
-        assertThat(read).isEqualTo(SHORT_BYTEARRAY);
+        assertThat(read).isEqualTo(bytes);
     }
 
-    @Test
-    default void saveByteSourceShouldOverwritePreviousData() {
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void saveByteSourceShouldBeIdempotent(byte[] bytes) {
         DumbBlobStore store = testee();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(ELEVEN_KILOBYTES)).block();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(SHORT_BYTEARRAY)).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(bytes)).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(bytes)).block();
 
         byte[] read = store.readBytes(TEST_BUCKET_NAME, TEST_BLOB_ID).block();
 
-        assertThat(read).isEqualTo(SHORT_BYTEARRAY);
+        assertThat(read).isEqualTo(bytes);
     }
 
-
-    @Test
-    default void saveInputStreamShouldOverwritePreviousData() {
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void saveInputStreamShouldBeIdempotent(byte[] bytes) {
         DumbBlobStore store = testee();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(ELEVEN_KILOBYTES)).block();
-        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(SHORT_BYTEARRAY)).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(bytes)).block();
+        store.save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(bytes)).block();
 
         byte[] read = store.readBytes(TEST_BUCKET_NAME, TEST_BLOB_ID).block();
 
-        assertThat(read).isEqualTo(SHORT_BYTEARRAY);
+        assertThat(read).isEqualTo(bytes);
     }
 
     @Test
@@ -295,14 +303,18 @@ public interface ReadSaveDumbBlobStoreContract {
             .isInstanceOf(IOObjectStoreException.class);
     }
 
-    @Test
-    default void concurrentSaveBytesShouldReturnConsistentValues() throws ExecutionException, InterruptedException {
-        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, SHORT_BYTEARRAY).block();
+    static Stream<Arguments> blobs() {
+        return Stream.of(SHORT_BYTEARRAY, ELEVEN_KILOBYTES, TWELVE_MEGABYTES)
+            .map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void concurrentSaveBytesShouldReturnConsistentValues(byte[] bytes) throws ExecutionException, InterruptedException {
+        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes).block();
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, SHORT_BYTEARRAY),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ELEVEN_KILOBYTES),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, TWELVE_MEGABYTES),
+                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes),
                 (threadNumber, step) -> checkConcurrentSaveOperation()
             )
             .threadCount(10)
@@ -310,14 +322,13 @@ public interface ReadSaveDumbBlobStoreContract {
             .runSuccessfullyWithin(Duration.ofMinutes(2));
     }
 
-    @Test
-    default void concurrentSaveInputStreamShouldReturnConsistentValues() throws ExecutionException, InterruptedException {
-        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, SHORT_BYTEARRAY).block();
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void concurrentSaveInputStreamShouldReturnConsistentValues(byte[] bytes) throws ExecutionException, InterruptedException {
+        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes).block();
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(SHORT_BYTEARRAY)),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(ELEVEN_KILOBYTES)),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(TWELVE_MEGABYTES)),
+                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(bytes)),
                 (threadNumber, step) -> checkConcurrentSaveOperation()
             )
             .threadCount(10)
@@ -325,14 +336,13 @@ public interface ReadSaveDumbBlobStoreContract {
             .runSuccessfullyWithin(Duration.ofMinutes(2));
     }
 
-    @Test
-    default void concurrentSaveByteSourceShouldReturnConsistentValues() throws ExecutionException, InterruptedException {
-        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, SHORT_BYTEARRAY).block();
+    @ParameterizedTest
+    @MethodSource("blobs")
+    default void concurrentSaveByteSourceShouldReturnConsistentValues(byte[] bytes) throws ExecutionException, InterruptedException {
+        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes).block();
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(SHORT_BYTEARRAY)),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(ELEVEN_KILOBYTES)),
-                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(TWELVE_MEGABYTES)),
+                (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(bytes)),
                 (threadNumber, step) -> checkConcurrentSaveOperation()
             )
             .threadCount(10)
