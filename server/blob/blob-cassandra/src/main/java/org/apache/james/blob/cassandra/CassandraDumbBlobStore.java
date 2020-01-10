@@ -31,15 +31,12 @@ import org.apache.james.backends.cassandra.init.configuration.CassandraConfigura
 import org.apache.james.blob.api.BlobId;
 import org.apache.james.blob.api.BucketName;
 import org.apache.james.blob.api.DumbBlobStore;
-import org.apache.james.blob.api.HashBlobId;
 import org.apache.james.blob.api.IOObjectStoreException;
 import org.apache.james.blob.api.ObjectNotFoundException;
 import org.apache.james.blob.cassandra.utils.DataChunker;
 import org.apache.james.util.ReactorUtils;
 
-import com.datastax.driver.core.Session;
 import com.github.fge.lambdas.Throwing;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteSource;
 import reactor.core.publisher.Flux;
@@ -55,32 +52,19 @@ public class CassandraDumbBlobStore implements DumbBlobStore {
     private final CassandraBucketDAO bucketDAO;
     private final DataChunker dataChunker;
     private final CassandraConfiguration configuration;
-    private final HashBlobId.Factory blobIdFactory;
     private final BucketName defaultBucket;
 
     @Inject
     CassandraDumbBlobStore(CassandraDefaultBucketDAO defaultBucketDAO,
                            CassandraBucketDAO bucketDAO,
                            CassandraConfiguration cassandraConfiguration,
-                           HashBlobId.Factory blobIdFactory,
                            BucketName defaultBucket) {
         this.defaultBucketDAO = defaultBucketDAO;
         this.bucketDAO = bucketDAO;
         this.configuration = cassandraConfiguration;
-        this.blobIdFactory = blobIdFactory;
         this.defaultBucket = defaultBucket;
         this.dataChunker = new DataChunker();
     }
-
-    @VisibleForTesting
-    public CassandraDumbBlobStore(Session session, BucketName defaultBucket) {
-        this(new CassandraDefaultBucketDAO(session),
-            new CassandraBucketDAO(new HashBlobId.Factory(), session),
-            CassandraConfiguration.DEFAULT_CONFIGURATION,
-            new HashBlobId.Factory(),
-            defaultBucket);
-    }
-
 
     @Override
     public InputStream read(BucketName bucketName, BlobId blobId) throws IOObjectStoreException, ObjectNotFoundException {

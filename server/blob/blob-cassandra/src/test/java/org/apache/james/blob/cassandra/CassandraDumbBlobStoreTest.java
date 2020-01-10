@@ -33,7 +33,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CassandraDumbBlobStoreTest implements DumbBlobStoreContract {
     private static final int CHUNK_SIZE = 10240;
-    private static final int MULTIPLE_CHUNK_SIZE = 3;
 
     @RegisterExtension
     static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraBlobModule.MODULE);
@@ -52,7 +51,6 @@ public class CassandraDumbBlobStoreTest implements DumbBlobStoreContract {
                 CassandraConfiguration.builder()
                     .blobPartSize(CHUNK_SIZE)
                     .build(),
-                blobIdFactory,
             BucketName.DEFAULT);
     }
 
