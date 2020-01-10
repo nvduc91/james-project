@@ -44,8 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runners.Parameterized;
 
 import com.google.common.io.ByteSource;
 import reactor.core.publisher.Mono;
@@ -315,7 +313,7 @@ public interface ReadSaveDumbBlobStoreContract {
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
                 (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, bytes),
-                (threadNumber, step) -> checkConcurrentSaveOperation()
+                (threadNumber, step) -> checkConcurrentSaveOperation(bytes)
             )
             .threadCount(10)
             .operationCount(100)
@@ -329,7 +327,7 @@ public interface ReadSaveDumbBlobStoreContract {
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
                 (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(bytes)),
-                (threadNumber, step) -> checkConcurrentSaveOperation()
+                (threadNumber, step) -> checkConcurrentSaveOperation(bytes)
             )
             .threadCount(10)
             .operationCount(100)
@@ -343,23 +341,23 @@ public interface ReadSaveDumbBlobStoreContract {
         ConcurrentTestRunner.builder()
             .randomlyDistributedReactorOperations(
                 (threadNumber, step) -> testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, ByteSource.wrap(bytes)),
-                (threadNumber, step) -> checkConcurrentSaveOperation()
+                (threadNumber, step) -> checkConcurrentSaveOperation(bytes)
             )
             .threadCount(10)
             .operationCount(100)
             .runSuccessfullyWithin(Duration.ofMinutes(2));
     }
 
-    default Mono<Void> checkConcurrentSaveOperation() {
+    @Test
+    default void testMemory() {
+        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(TWELVE_MEGABYTES)).block();
+    }
+
+    default Mono<Void> checkConcurrentSaveOperation(byte[] bytes) {
         return Mono
             .fromCallable(() ->
                 testee().read(TEST_BUCKET_NAME, TEST_BLOB_ID))
-            .flatMap(inputstream -> Mono.fromCallable(() -> IOUtils.toByteArray(inputstream)))
-            .doOnNext(inputStream -> assertThat(inputStream).isIn(
-                SHORT_BYTEARRAY,
-                ELEVEN_KILOBYTES,
-                TWELVE_MEGABYTES
-            ))
+            .doOnNext(inputStream -> assertThat(inputStream).hasSameContentAs(new ByteArrayInputStream(bytes)))
             .then();
     }
 
