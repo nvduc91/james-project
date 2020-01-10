@@ -348,11 +348,6 @@ public interface ReadSaveDumbBlobStoreContract {
             .runSuccessfullyWithin(Duration.ofMinutes(2));
     }
 
-    @Test
-    default void testMemory() {
-        testee().save(TEST_BUCKET_NAME, TEST_BLOB_ID, new ByteArrayInputStream(TWELVE_MEGABYTES)).block();
-    }
-
     default Mono<Void> checkConcurrentSaveOperation(byte[] bytes) {
         return Mono
             .fromCallable(() ->
