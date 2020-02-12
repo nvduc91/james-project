@@ -39,7 +39,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import com.github.fge.lambdas.Throwing;
-import com.google.common.annotations.VisibleForTesting;
 
 import feign.Feign;
 import feign.Headers;
@@ -59,7 +58,6 @@ public class LinshareExtension implements BeforeEachCallback, BeforeAllCallback 
         String CONTENT_DISPOSITION_ATTACHMENT = "Content-Disposition: attachment; filename=\"{filename}\"";
         String CONTENT_TYPE_APPLICATION_OCTET_STREAM = "Content-Type: application/octet-stream";
 
-        @VisibleForTesting
         static LinshareAPIForTesting from(LinshareFixture.Credential credential, Linshare linshare) {
 
             return Feign.builder()

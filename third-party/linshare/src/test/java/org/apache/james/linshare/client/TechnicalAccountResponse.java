@@ -21,9 +21,8 @@ package org.apache.james.linshare.client;
 
 import java.util.List;
 
-import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 
 public class TechnicalAccountResponse {
 

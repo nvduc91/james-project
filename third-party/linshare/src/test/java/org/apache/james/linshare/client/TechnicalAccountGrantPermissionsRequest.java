@@ -24,9 +24,8 @@ import static org.apache.james.linshare.LinshareFixture.TECHNICAL_PERMISSIONS;
 
 import java.util.List;
 
-import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 
 public class TechnicalAccountGrantPermissionsRequest {
 
