@@ -23,18 +23,20 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.apache.james.blob.api.BlobId;
 import org.apache.james.blob.api.BlobStore;
 import org.apache.james.blob.api.BucketName;
 import org.apache.james.blob.api.ObjectNotFoundException;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class HybridBlobStore implements BlobStore {
@@ -74,24 +76,32 @@ public class HybridBlobStore implements BlobStore {
 
     public static class Configuration {
         public static final int DEFAULT_SIZE_THRESHOLD = 32 * 1024;
-        public static final Configuration DEFAULT = new Configuration(DEFAULT_SIZE_THRESHOLD);
+        public static final boolean DEFAULT_DUPLICATE_WRITE = false;
+        public static final Configuration DEFAULT = new Configuration(DEFAULT_SIZE_THRESHOLD, DEFAULT_DUPLICATE_WRITE);
         private static final String PROPERTY_NAME = "hybrid.size.threshold";
+        private static final String DUPLICATE_WRITE_PROPERTY = "hybrid.duplicate.writes";
 
         public static Configuration from(org.apache.commons.configuration2.Configuration propertiesConfiguration) {
-            return new Configuration(Optional.ofNullable(propertiesConfiguration.getInteger(PROPERTY_NAME, null))
-                .orElse(DEFAULT_SIZE_THRESHOLD));
+            return new Configuration(propertiesConfiguration.getInteger(PROPERTY_NAME, DEFAULT_SIZE_THRESHOLD),
+                propertiesConfiguration.getBoolean(DUPLICATE_WRITE_PROPERTY, DEFAULT_DUPLICATE_WRITE));
         }
 
         private final int sizeThreshold;
+        private final boolean duplicateWrite;
 
-        public Configuration(int sizeThreshold) {
+        public Configuration(int sizeThreshold, boolean duplicateWrite) {
             Preconditions.checkArgument(sizeThreshold >= 0, "'" + PROPERTY_NAME + "' needs to be positive");
 
             this.sizeThreshold = sizeThreshold;
+            this.duplicateWrite = duplicateWrite;
         }
 
         public int getSizeThreshold() {
             return sizeThreshold;
+        }
+
+        public boolean isDuplicateWrite() {
+            return duplicateWrite;
         }
 
         @Override
@@ -99,14 +109,15 @@ public class HybridBlobStore implements BlobStore {
             if (o instanceof Configuration) {
                 Configuration that = (Configuration) o;
 
-                return Objects.equals(this.sizeThreshold, that.sizeThreshold);
+                return Objects.equals(this.sizeThreshold, that.sizeThreshold)
+                    && Objects.equals(this.duplicateWrite, that.duplicateWrite);
             }
             return false;
         }
 
         @Override
         public final int hashCode() {
-            return Objects.hash(sizeThreshold);
+            return Objects.hash(sizeThreshold, duplicateWrite);
         }
     }
 
@@ -128,43 +139,58 @@ public class HybridBlobStore implements BlobStore {
 
     @Override
     public Mono<BlobId> save(BucketName bucketName, byte[] data, StoragePolicy storagePolicy) {
-        return selectBlobStore(storagePolicy, Mono.just(data.length > configuration.getSizeThreshold()))
-            .flatMap(blobStore -> Mono.from(blobStore.save(bucketName, data, storagePolicy)));
+        return Flux.from(selectBlobStores(storagePolicy, Mono.just(data.length > configuration.getSizeThreshold())))
+            .flatMap(blobStore -> blobStore.save(bucketName, data, storagePolicy))
+            .distinct()
+            .single();
     }
 
     @Override
     public Mono<BlobId> save(BucketName bucketName, InputStream data, StoragePolicy storagePolicy) {
         Preconditions.checkNotNull(data);
 
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(data, configuration.getSizeThreshold() + 1);
-        return selectBlobStore(storagePolicy, Mono.fromCallable(() -> isItABigStream(bufferedInputStream)))
-            .flatMap(blobStore -> Mono.from(blobStore.save(bucketName, bufferedInputStream, storagePolicy)));
+        Supplier<byte[]> byteSupplier = () -> {
+            try {
+                return readAllBytes(new BufferedInputStream(data, configuration.getSizeThreshold() + 1));
+            } catch (IOException e) {
+                LOGGER.error("Error when reading bytes from InputStream, cause: {}", e.getMessage());
+            }
+            return new byte[0];
+        };
+
+        return save(bucketName, byteSupplier.get(), storagePolicy);
     }
 
-    private Mono<BlobStore> selectBlobStore(StoragePolicy storagePolicy, Mono<Boolean> largeData) {
+    private Publisher<BlobStore> selectBlobStores(StoragePolicy storagePolicy, Mono<Boolean> largeData) {
         switch (storagePolicy) {
             case LOW_COST:
                 return Mono.just(lowCostBlobStore);
+
             case SIZE_BASED:
-                return largeData.map(isLarge -> {
-                    if (isLarge) {
-                        return lowCostBlobStore;
-                    }
-                    return highPerformanceBlobStore;
-                });
+                return largeData.flux()
+                    .filter(Boolean::booleanValue)
+                    .map(ignored -> lowCostBlobStore)
+                    .switchIfEmpty(
+                        Flux.just(configuration.isDuplicateWrite())
+                            .filter(duplicateWrite -> !duplicateWrite)
+                            .map(ignored -> highPerformanceBlobStore)
+                            .switchIfEmpty(Flux.just(highPerformanceBlobStore, lowCostBlobStore)));
+
             case HIGH_PERFORMANCE:
-                return Mono.just(highPerformanceBlobStore);
+                return Flux.just(this.configuration.isDuplicateWrite())
+                    .filter(duplicateWrite -> !duplicateWrite)
+                    .map(ignored -> highPerformanceBlobStore)
+                    .switchIfEmpty(Flux.just(highPerformanceBlobStore, lowCostBlobStore));
+
             default:
                 throw new RuntimeException("Unknown storage policy: " + storagePolicy);
         }
     }
 
-    private boolean isItABigStream(InputStream bufferedData) throws IOException {
-        bufferedData.mark(0);
-        bufferedData.skip(configuration.getSizeThreshold());
-        boolean isItABigStream = bufferedData.read() != -1;
-        bufferedData.reset();
-        return isItABigStream;
+    private byte[] readAllBytes(InputStream inputStream) throws IOException {
+        byte[] bytes = new byte[inputStream.available()];
+        inputStream.read(bytes);
+        return bytes;
     }
 
     @Override

@@ -22,6 +22,8 @@ package org.apache.james.blob.union;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.HIGH_PERFORMANCE;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.LOW_COST;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.SIZE_BASED;
+import static org.apache.james.blob.union.HybridBlobStore.Configuration;
+import static org.apache.james.blob.union.HybridBlobStore.Configuration.DEFAULT_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -151,10 +153,12 @@ class HybridBlobStoreTest implements BlobStoreContract {
     private static final HashBlobId.Factory BLOB_ID_FACTORY = new HashBlobId.Factory();
     private static final String STRING_CONTENT = "blob content";
     private static final byte [] BLOB_CONTENT = STRING_CONTENT.getBytes();
+    private static final boolean DUPLICATE_WRITE = true;
 
     private MemoryBlobStore lowCostBlobStore;
     private MemoryBlobStore highPerformanceBlobStore;
     private HybridBlobStore hybridBlobStore;
+    private HybridBlobStore hybridExtraStorageBlobStore;
 
     @BeforeEach
     void setup() {
@@ -164,6 +168,11 @@ class HybridBlobStoreTest implements BlobStoreContract {
             .lowCost(lowCostBlobStore)
             .highPerformance(highPerformanceBlobStore)
             .configuration(HybridBlobStore.Configuration.DEFAULT)
+            .build();
+        hybridExtraStorageBlobStore = HybridBlobStore.builder()
+            .lowCost(lowCostBlobStore)
+            .highPerformance(highPerformanceBlobStore)
+            .configuration(new Configuration(DEFAULT_SIZE_THRESHOLD, DUPLICATE_WRITE))
             .build();
     }
 
@@ -272,6 +281,58 @@ class HybridBlobStoreTest implements BlobStoreContract {
                     .satisfies(Throwing.consumer(inputStream -> assertThat(inputStream.read()).isGreaterThan(0)));
                 softly.assertThatThrownBy(() -> highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
+            });
+        }
+    }
+
+    @Nested
+    class StoragePolicyWithHybridDuplicateWriteTests {
+
+        @Test
+        void saveShouldRelyOnPerformingAndDuplicateWriteWhenPerforming() {
+            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, HIGH_PERFORMANCE).block();
+
+            SoftAssertions.assertSoftly(softly -> {
+                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+            });
+        }
+
+        @Test
+        void saveShouldRelyOnPerformingWhenSizeBasedAndSmallAndDuplicateWrite() {
+            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, SIZE_BASED).block();
+
+            SoftAssertions.assertSoftly(softly -> {
+                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+            });
+        }
+
+        @Test
+        void saveInputStreamShouldRelyOnPerformingWhenPerforming() {
+            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), HIGH_PERFORMANCE).block();
+
+            SoftAssertions.assertSoftly(softly -> {
+                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+            });
+        }
+
+        @Test
+        void saveInputStreamShouldRelyOnPerformingWhenSizeBasedAndSmall() {
+            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), SIZE_BASED).block();
+
+            SoftAssertions.assertSoftly(softly -> {
+                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
+                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
             });
         }
     }
