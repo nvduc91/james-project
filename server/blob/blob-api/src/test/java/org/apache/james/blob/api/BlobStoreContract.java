@@ -19,13 +19,13 @@
 
 package org.apache.james.blob.api;
 
-import static org.apache.james.blob.api.BlobStore.StoragePolicy.HIGH_PERFORMANCE;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.LOW_COST;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.SIZE_BASED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
@@ -44,8 +44,7 @@ public interface BlobStoreContract extends DeleteBlobStoreContract, BucketBlobSt
     static Stream<Arguments> storagePolicies() {
         return Stream.of(
             Arguments.arguments(LOW_COST),
-            Arguments.arguments(SIZE_BASED),
-            Arguments.arguments(HIGH_PERFORMANCE));
+            Arguments.arguments(SIZE_BASED));
     }
 
     String SHORT_STRING = "toto";
@@ -158,6 +157,39 @@ public interface BlobStoreContract extends DeleteBlobStoreContract, BucketBlobSt
         BlobId blobId = Mono.from(store.save(defaultBucketName, new ByteArrayInputStream(SHORT_BYTEARRAY), storagePolicy)).block();
 
         assertThat(blobId).isEqualTo(blobIdFactory().from("31f7a65e315586ac198bd798b6629ce4903d0899476d5741a9f32e2e521b6a66"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("storagePolicies")
+    default void saveShouldCloseBigStream(BlobStore.StoragePolicy storagePolicy) {
+        BlobStore store = testee();
+        BucketName defaultBucketName = store.getDefaultBucketName();
+        InputStream bigInputStream = new ByteArrayInputStream(TWELVE_MEGABYTES);
+
+        BlobId blobId = store.save(defaultBucketName, bigInputStream, storagePolicy).block();
+        assertThat(blobId).isEqualTo(blobIdFactory().from("ac8165f8af3d635aaf16e1a5b4e0ff61c0eb764c6f5569c9b9dc8dc5f171a144"));
+        try {
+            bigInputStream.read();
+        } catch (Exception e) {
+            assertThat(e).isInstanceOf(IOException.class).hasMessage("Input Stream closed");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("storagePolicies")
+    default void saveShouldCloseSmallStream(BlobStore.StoragePolicy storagePolicy) {
+        BlobStore store = testee();
+        BucketName defaultBucketName = store.getDefaultBucketName();
+        InputStream smallInputStream = new ByteArrayInputStream(SHORT_BYTEARRAY);
+
+        BlobId blobId = store.save(defaultBucketName, smallInputStream, storagePolicy).block();
+        assertThat(blobId).isEqualTo(blobIdFactory().from("31f7a65e315586ac198bd798b6629ce4903d0899476d5741a9f32e2e521b6a66"));
+
+        try {
+            smallInputStream.read();
+        } catch (Exception e) {
+            assertThat(e).isInstanceOf(IOException.class).hasMessage("Input Stream closed");
+        }
     }
 
     @Test

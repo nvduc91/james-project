@@ -56,6 +56,14 @@
                 </dl>
             </subsection>
 
+            <subsection name="Hybrid BlobStore option to always write to ObjectStorage">
+                <dl>
+                    <dt><strong>hybrid.duplicate.writes</strong></dt>
+                    <dd>DEFAULT: false, must be true/false. It happen only 'value = true' and it stored in cassandra.</dd>
+                    <dd>Enabling this option in the only way to make the adoption of hybrid blob store reversible, however you will lose performance/cost gains on writes</dd>
+                </dl>
+            </subsection>
+
             <subsection name="ObjectStorage BlobStore Codec Configuration">
                 <dl>
                     <dt><strong>objectstorage.payload.codec</strong></dt>

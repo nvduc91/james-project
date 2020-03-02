@@ -19,7 +19,6 @@
 
 package org.apache.james.blob.union;
 
-import static org.apache.james.blob.api.BlobStore.StoragePolicy.HIGH_PERFORMANCE;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.LOW_COST;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.SIZE_BASED;
 import static org.apache.james.blob.union.HybridBlobStore.Configuration;
@@ -30,7 +29,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.james.blob.api.BlobId;
 import org.apache.james.blob.api.BlobStore;
 import org.apache.james.blob.api.BlobStoreContract;
@@ -47,6 +48,9 @@ import org.junit.jupiter.api.Test;
 
 import com.github.fge.lambdas.Throwing;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import reactor.core.publisher.Mono;
@@ -151,14 +155,20 @@ class HybridBlobStoreTest implements BlobStoreContract {
     }
 
     private static final HashBlobId.Factory BLOB_ID_FACTORY = new HashBlobId.Factory();
+
     private static final String STRING_CONTENT = "blob content";
-    private static final byte [] BLOB_CONTENT = STRING_CONTENT.getBytes();
+    private static final byte [] SMALL_BLOB_CONTENT = STRING_CONTENT.getBytes();
+    private static final HashCode SMALL_HASH_CODE = hash(SMALL_BLOB_CONTENT);
+
+    private static byte[] BIG_BLOB_CONTENT = Strings.repeat("0123456789\r\n", 1024 * 1024).getBytes(StandardCharsets.UTF_8);
+    private static final HashCode BIG_HASH_CODE = hash(BIG_BLOB_CONTENT);
+
     private static final boolean DUPLICATE_WRITE = true;
 
     private MemoryBlobStore lowCostBlobStore;
     private MemoryBlobStore highPerformanceBlobStore;
     private HybridBlobStore hybridBlobStore;
-    private HybridBlobStore hybridExtraStorageBlobStore;
+    private HybridBlobStore hybridBlobStoreDuplicatingWrites;
 
     @BeforeEach
     void setup() {
@@ -169,7 +179,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
             .highPerformance(highPerformanceBlobStore)
             .configuration(HybridBlobStore.Configuration.DEFAULT)
             .build();
-        hybridExtraStorageBlobStore = HybridBlobStore.builder()
+        hybridBlobStoreDuplicatingWrites = HybridBlobStore.builder()
             .lowCost(lowCostBlobStore)
             .highPerformance(highPerformanceBlobStore)
             .configuration(new Configuration(DEFAULT_SIZE_THRESHOLD, DUPLICATE_WRITE))
@@ -186,39 +196,31 @@ class HybridBlobStoreTest implements BlobStoreContract {
         return BLOB_ID_FACTORY;
     }
 
+    private static HashCode hash(byte[] bytes) {
+        return Hashing.sha256().hashBytes(bytes);
+    }
+
     @Nested
     class StoragePolicyTests {
         @Test
         void saveShouldRelyOnLowCostWhenLowCost() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
                 softly.assertThatThrownBy(() -> highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
         }
 
         @Test
-        void saveShouldRelyOnPerformingWhenPerforming() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, HIGH_PERFORMANCE).block();
-
-            SoftAssertions.assertSoftly(softly -> {
-                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-                softly.assertThatThrownBy(() -> lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .isInstanceOf(ObjectNotFoundException.class);
-            });
-        }
-
-        @Test
         void saveShouldRelyOnPerformingWhenSizeBasedAndSmall() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, SIZE_BASED).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
                 softly.assertThatThrownBy(() -> lowCostBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
@@ -226,11 +228,11 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveShouldRelyOnLowCostWhenSizeBasedAndBig() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, TWELVE_MEGABYTES, SIZE_BASED).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, BIG_BLOB_CONTENT, SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .satisfies(Throwing.consumer(inputStream -> assertThat(inputStream.read()).isGreaterThan(0)));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(BIG_HASH_CODE)));
                 softly.assertThatThrownBy(() -> highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
@@ -238,35 +240,23 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveInputStreamShouldRelyOnLowCostWhenLowCost() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), LOW_COST).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(SMALL_BLOB_CONTENT), LOW_COST).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
                 softly.assertThatThrownBy(() -> highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
         }
 
         @Test
-        void saveInputStreamShouldRelyOnPerformingWhenPerforming() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), HIGH_PERFORMANCE).block();
-
-            SoftAssertions.assertSoftly(softly -> {
-                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-                softly.assertThatThrownBy(() -> lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .isInstanceOf(ObjectNotFoundException.class);
-            });
-        }
-
-        @Test
         void saveInputStreamShouldRelyOnPerformingWhenSizeBasedAndSmall() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), SIZE_BASED).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(SMALL_BLOB_CONTENT), SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
                 softly.assertThatThrownBy(() -> lowCostBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
@@ -274,11 +264,11 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
         @Test
         void saveInputStreamShouldRelyOnLowCostWhenSizeBasedAndBig() {
-            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(TWELVE_MEGABYTES), SIZE_BASED).block();
+            BlobId blobId = hybridBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BIG_BLOB_CONTENT), SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .satisfies(Throwing.consumer(inputStream -> assertThat(inputStream.read()).isGreaterThan(0)));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(BIG_HASH_CODE)));
                 softly.assertThatThrownBy(() -> highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
                     .isInstanceOf(ObjectNotFoundException.class);
             });
@@ -287,54 +277,30 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Nested
     class StoragePolicyWithHybridDuplicateWriteTests {
-
         @Test
-        void saveShouldRelyOnPerformingAndDuplicateWriteWhenPerforming() {
-            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, HIGH_PERFORMANCE).block();
+        void saveShouldDuplicatedWriteWhenSizeBasedAndSmallAndDuplicateWrite() {
+            BlobId blobId = hybridBlobStoreDuplicatingWrites.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(SMALL_HASH_CODE)));
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(SMALL_HASH_CODE)));
             });
         }
 
         @Test
-        void saveShouldRelyOnPerformingWhenSizeBasedAndSmallAndDuplicateWrite() {
-            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, SIZE_BASED).block();
+        void saveInputStreamShouldDuplicatedWritesWhenSizeBasedAndSmallAndDuplicateWire() {
+            BlobId blobId = hybridBlobStoreDuplicatingWrites.save(BucketName.DEFAULT, new ByteArrayInputStream(SMALL_BLOB_CONTENT), SIZE_BASED).block();
 
             SoftAssertions.assertSoftly(softly -> {
                 softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(SMALL_HASH_CODE)));
                 softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                    .satisfies(Throwing.consumer(inputStream -> assertThat(hash(IOUtils.toByteArray(inputStream))).isEqualTo(SMALL_HASH_CODE)));
             });
         }
 
-        @Test
-        void saveInputStreamShouldRelyOnPerformingWhenPerforming() {
-            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), HIGH_PERFORMANCE).block();
-
-            SoftAssertions.assertSoftly(softly -> {
-                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-            });
-        }
-
-        @Test
-        void saveInputStreamShouldRelyOnPerformingWhenSizeBasedAndSmall() {
-            BlobId blobId = hybridExtraStorageBlobStore.save(BucketName.DEFAULT, new ByteArrayInputStream(BLOB_CONTENT), SIZE_BASED).block();
-
-            SoftAssertions.assertSoftly(softly -> {
-                softly.assertThat(highPerformanceBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-                softly.assertThat(lowCostBlobStore.read(BucketName.DEFAULT, blobId))
-                    .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
-            });
-        }
     }
 
     @Nested
@@ -348,7 +314,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
 
-            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block())
+            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block())
                 .isInstanceOf(RuntimeException.class);
         }
 
@@ -361,7 +327,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
 
-            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), new ByteArrayInputStream(BLOB_CONTENT), LOW_COST).block())
+            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), new ByteArrayInputStream(SMALL_BLOB_CONTENT), LOW_COST).block())
                 .isInstanceOf(RuntimeException.class);
         }
     }
@@ -378,7 +344,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
 
-            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block())
+            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block())
                 .isInstanceOf(RuntimeException.class);
         }
 
@@ -391,7 +357,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
 
-            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), new ByteArrayInputStream(BLOB_CONTENT), LOW_COST).block())
+            assertThatThrownBy(() -> hybridBlobStore.save(hybridBlobStore.getDefaultBucketName(), new ByteArrayInputStream(SMALL_BLOB_CONTENT), LOW_COST).block())
                 .isInstanceOf(RuntimeException.class);
         }
 
@@ -408,10 +374,10 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .highPerformance(highPerformanceBlobStore)
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
-            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
             assertThat(hybridBlobStore.read(hybridBlobStore.getDefaultBucketName(), blobId))
-                .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
         }
 
         @Test
@@ -423,10 +389,10 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .highPerformance(highPerformanceBlobStore)
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
-            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
             assertThat(hybridBlobStore.readBytes(hybridBlobStore.getDefaultBucketName(), blobId).block())
-                .isEqualTo(BLOB_CONTENT);
+                .isEqualTo(SMALL_BLOB_CONTENT);
         }
 
     }
@@ -442,10 +408,10 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .highPerformance(highPerformanceBlobStore)
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
-            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
             assertThat(hybridBlobStore.read(hybridBlobStore.getDefaultBucketName(), blobId))
-                .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+                .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
         }
 
         @Test
@@ -456,49 +422,49 @@ class HybridBlobStoreTest implements BlobStoreContract {
                 .highPerformance(highPerformanceBlobStore)
                 .configuration(HybridBlobStore.Configuration.DEFAULT)
                 .build();
-            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+            BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
             assertThat(hybridBlobStore.readBytes(hybridBlobStore.getDefaultBucketName(), blobId).block())
-                .isEqualTo(BLOB_CONTENT);
+                .isEqualTo(SMALL_BLOB_CONTENT);
         }
     }
 
     @Test
     void readShouldReturnFromLowCostWhenAvailable() {
-        BlobId blobId = lowCostBlobStore.save(lowCostBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = lowCostBlobStore.save(lowCostBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
         assertThat(hybridBlobStore.read(hybridBlobStore.getDefaultBucketName(), blobId))
-            .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+            .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
     }
 
     @Test
     void readShouldReturnFromPerformingWhenLowCostNotAvailable() {
-        BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
         assertThat(hybridBlobStore.read(hybridBlobStore.getDefaultBucketName(), blobId))
-            .hasSameContentAs(new ByteArrayInputStream(BLOB_CONTENT));
+            .hasSameContentAs(new ByteArrayInputStream(SMALL_BLOB_CONTENT));
     }
 
     @Test
     void readBytesShouldReturnFromLowCostWhenAvailable() {
-        BlobId blobId = lowCostBlobStore.save(lowCostBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = lowCostBlobStore.save(lowCostBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
         assertThat(hybridBlobStore.readBytes(lowCostBlobStore.getDefaultBucketName(), blobId).block())
-            .isEqualTo(BLOB_CONTENT);
+            .isEqualTo(SMALL_BLOB_CONTENT);
     }
 
     @Test
     void readBytesShouldReturnFromPerformingWhenLowCostNotAvailable() {
-        BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = highPerformanceBlobStore.save(hybridBlobStore.getDefaultBucketName(), SMALL_BLOB_CONTENT, LOW_COST).block();
 
         assertThat(hybridBlobStore.readBytes(hybridBlobStore.getDefaultBucketName(), blobId).block())
-            .isEqualTo(BLOB_CONTENT);
+            .isEqualTo(SMALL_BLOB_CONTENT);
     }
 
     @Test
     void deleteBucketShouldDeleteBothLowCostAndPerformingBuckets() {
-        BlobId blobId1 = highPerformanceBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
-        BlobId blobId2 = lowCostBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId1 = highPerformanceBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId2 = lowCostBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
         hybridBlobStore.deleteBucket(BucketName.DEFAULT).block();
 
@@ -510,7 +476,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Test
     void deleteBucketShouldDeleteLowCostBucketEvenWhenPerformingDoesNotExist() {
-        BlobId blobId = lowCostBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = lowCostBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
         hybridBlobStore.deleteBucket(BucketName.DEFAULT).block();
 
@@ -520,7 +486,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Test
     void deleteBucketShouldDeletePerformingBucketEvenWhenLowCostDoesNotExist() {
-        BlobId blobId = highPerformanceBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = highPerformanceBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
         hybridBlobStore.deleteBucket(BucketName.DEFAULT).block();
 
@@ -550,8 +516,8 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Test
     void deleteShouldDeleteBothLowCostAndPerformingBlob() {
-        BlobId blobId1 = hybridBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
-        BlobId blobId2 = hybridBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, HIGH_PERFORMANCE).block();
+        BlobId blobId1 = hybridBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId2 = hybridBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, SIZE_BASED).block();
 
         hybridBlobStore.delete(BucketName.DEFAULT, blobId1).block();
 
@@ -563,7 +529,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Test
     void deleteShouldDeleteLowCostBlobEvenWhenPerformingDoesNotExist() {
-        BlobId blobId = lowCostBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = lowCostBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
         hybridBlobStore.delete(BucketName.DEFAULT, blobId).block();
 
@@ -573,7 +539,7 @@ class HybridBlobStoreTest implements BlobStoreContract {
 
     @Test
     void deleteShouldDeletePerformingBlobEvenWhenLowCostDoesNotExist() {
-        BlobId blobId = highPerformanceBlobStore.save(BucketName.DEFAULT, BLOB_CONTENT, LOW_COST).block();
+        BlobId blobId = highPerformanceBlobStore.save(BucketName.DEFAULT, SMALL_BLOB_CONTENT, LOW_COST).block();
 
         hybridBlobStore.delete(BucketName.DEFAULT, blobId).block();
 

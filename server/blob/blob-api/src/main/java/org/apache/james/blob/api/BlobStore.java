@@ -27,8 +27,7 @@ public interface BlobStore {
 
     enum StoragePolicy {
         SIZE_BASED,
-        LOW_COST,
-        HIGH_PERFORMANCE
+        LOW_COST
     }
 
     Publisher<BlobId> save(BucketName bucketName, byte[] data, StoragePolicy storagePolicy);
