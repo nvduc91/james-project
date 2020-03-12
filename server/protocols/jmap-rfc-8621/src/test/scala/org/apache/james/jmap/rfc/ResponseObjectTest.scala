@@ -19,69 +19,36 @@
 
 package org.apache.james.jmap.rfc
 
-import org.apache.james.jmap.rfc.model.RequestObject
-import org.apache.james.jmap.rfc.model.RequestObject.{Capability, ClientId, Invocation, ServerId}
+import org.apache.james.jmap.rfc.model.RequestObject.Capability
+import org.apache.james.jmap.rfc.model.ResponseObject.{SessionState, Invocation}
+import org.apache.james.jmap.rfc.model.ResponseObject
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
-class RequestObjectTest extends PlaySpec {
+class ResponseObjectTest extends PlaySpec {
 
-  "Deserialize Capability" must {
+  "Deserialize SessionState" must {
     "succeed with 1 value" in {
-      val capabilityJsValue: JsValue = JsString("org.com.test.1")
-      Json.fromJson[Capability](capabilityJsValue) must be(JsSuccess(Capability("org.com.test.1")))
+      val sessionStateJsValue: JsValue = JsString("75128aab4b1b")
+      Json.fromJson[SessionState](sessionStateJsValue) must be(JsSuccess(SessionState("75128aab4b1b")))
     }
 
     "failed with wrong value type" in {
-      val capabilityJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](capabilityJsValue) must not be (JsSuccess(Capability("org.com.test.1")))
+      val sessionStateJsValue: JsValue = JsBoolean(true)
+      Json.fromJson[Capability](sessionStateJsValue) must not be (JsSuccess(SessionState("75128aab4b1b")))
     }
 
     "failed with wrong class type" in {
-      val capabilityJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ClientId](capabilityJsValue) must not be (JsSuccess(Capability("org.com.test.1")))
+      val sessionStateJsValue: JsValue = JsBoolean(true)
+      Json.fromJson[SessionState](sessionStateJsValue) must not be (JsSuccess(SessionState("75128aab4b1b")))
     }
   }
 
-  "Serialize Capability" must {
+  "Serialize SessionState" must {
     "succeed " in {
-      val capability: Capability = Capability("org.com.test.1")
-      val expectedCapability: JsValue = JsString("org.com.test.1")
-      Json.toJson[Capability](capability) must be(expectedCapability)
-    }
-  }
-
-  "Deserialize ClientId" must {
-    "succeed " in {
-      val clientIdJsValue: JsValue = JsString("Core/echo")
-      Json.fromJson[ClientId](clientIdJsValue) must be(JsSuccess(ClientId("Core/echo")))
-    }
-
-    "failed with wrong class type" in {
-      val clientIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](clientIdJsValue) must not be (JsSuccess(ClientId("Core/echo")))
-    }
-
-    "failed with wrong value type" in {
-      val clientIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ClientId](clientIdJsValue) must not be (JsSuccess(ClientId("Core/echo")))
-    }
-  }
-
-  "Deserialize ServerId" must {
-    "succeed " in {
-      val serverIdJsValue: JsValue = JsString("Server 1 for test")
-      Json.fromJson[ServerId](serverIdJsValue) must be(JsSuccess(ServerId("Server 1 for test")))
-    }
-
-    "failed with wrong class type" in {
-      val serverIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](serverIdJsValue) must not be (JsSuccess(ServerId("Server 1 for test")))
-    }
-
-    "failed with wrong value type" in {
-      val serverIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ServerId](serverIdJsValue) must not be (JsSuccess(ServerId("Server 1 for test")))
+      val sessionState: SessionState = SessionState("75128aab4b1b")
+      val expectedSessionState: JsValue = JsString("75128aab4b1b")
+      Json.toJson[SessionState](sessionState) must be(expectedSessionState)
     }
   }
 
@@ -150,21 +117,21 @@ class RequestObjectTest extends PlaySpec {
 
   "Deserialize RequestObject" must {
     "succeed " in {
-      RequestObject.deserialize(
+      ResponseObject.deserialize(
         """
           |{
-          |  "using": [ "urn:ietf:params:jmap:core"],
-          |  "methodCalls": [
+          |  "methodResponses": [
           |    [ "Core/echo", {
           |      "arg1": "arg1data",
           |      "arg2": "arg2data"
           |    }, "c1" ]
-          |  ]
+          |  ],
+          |  "sessionState": "75128aab4b1b"
           |}
           |""".stripMargin) must be(
-        RequestObject.RequestObject(
-          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
-          methodCalls = Seq(Invocation(Json.parse(
+        ResponseObject.ResponseObject(
+          sessionState = ResponseObject.SessionState("75128aab4b1b"),
+          methodResponses = Seq(Invocation(Json.parse(
             """[ "Core/echo", {
               |      "arg1": "arg1data",
               |      "arg2": "arg2data"
@@ -173,10 +140,10 @@ class RequestObjectTest extends PlaySpec {
     }
 
     "succeed with many Capability, methodCalls" in {
-      RequestObject.deserialize(
+      ResponseObject.deserialize(
         """
           |{
-          |  "using": [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:core2"],
+          |  "sessionState": "75128aab4b1b",
           |  "methodCalls": [
           |    [ "Core/echo", {
           |      "arg1": "arg1data",
@@ -189,9 +156,9 @@ class RequestObjectTest extends PlaySpec {
           |  ]
           |}
           |""".stripMargin) must be(
-        RequestObject.RequestObject(
-          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
-          methodCalls = Seq(Invocation(Json.parse(
+        ResponseObject.ResponseObject(
+          sessionState = ResponseObject.SessionState("75128aab4b1b"),
+          methodResponses = Seq(Invocation(Json.parse(
             """[ "Core/echo", {
               |      "arg1": "arg1data",
               |      "arg2": "arg2data"
@@ -207,9 +174,9 @@ class RequestObjectTest extends PlaySpec {
 
   "Serialize RequestObject" must {
     "succeed " in {
-      val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
-        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
-        methodCalls = Seq(Invocation(Json.parse(
+      val requestObject: ResponseObject.ResponseObject = ResponseObject.ResponseObject(
+        sessionState = ResponseObject.SessionState("75128aab4b1b"),
+        methodResponses = Seq(Invocation(Json.parse(
           """[ "Core/echo", {
             |      "arg1": "arg1data",
             |      "arg2": "arg2data"
@@ -218,7 +185,7 @@ class RequestObjectTest extends PlaySpec {
       Json.prettyPrint(Json.toJson(requestObject)) must be(
         """
           {
-            "using": [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:core2"],
+            "sessionState": "75128aab4b1b",
             "methodCalls": [
               [ "Core/echo", {
                 "arg1": "arg1data",

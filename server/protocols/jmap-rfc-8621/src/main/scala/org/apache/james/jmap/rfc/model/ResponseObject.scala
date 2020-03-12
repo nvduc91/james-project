@@ -19,4 +19,20 @@
 
 package org.apache.james.jmap.rfc.model
 
-case class ResponseObject ()
+import play.api.libs.json.{JsArray, Json}
+
+object ResponseObject {
+
+  case class SessionState(value: String) extends AnyVal
+  case class Invocation(value: JsArray) extends AnyVal
+  case class ResponseObject(sessionState: SessionState, methodResponses: Seq[Invocation])
+
+  implicit val sessionStateFormat = Json.valueFormat[SessionState]
+  implicit val methodResponseFormat = Json.valueFormat[Invocation]
+  implicit val responseObjectFormat = Json.format[ResponseObject]
+
+  def deserialize(input: String): ResponseObject = {
+    Json.parse(input).as[ResponseObject]
+  }
+
+}

@@ -19,18 +19,25 @@
 
 package org.apache.james.jmap.rfc.model
 
-case class Capability(value: String) extends AnyVal
-case class ClientId(value: String) extends AnyVal
-case class ServerId(value: String) extends AnyVal
-case class RequestObject(using: Seq[Capability], methodCalls: Seq[String], createdIds: Map[ClientId, ServerId])
-
-object RequestObjectPOJO {
+object RequestObject {
 
   import play.api.libs.json._
+
+  case class Capability(value: String) extends AnyVal
+  case class ClientId(value: String) extends AnyVal
+  case class ServerId(value: String) extends AnyVal
+  case class Invocation(value: JsArray) extends AnyVal
+  case class RequestObject(using: Seq[Capability], methodCalls: Seq[Invocation])
 
   implicit val capabilityFormat = Json.valueFormat[Capability]
   implicit val clientIdFormat = Json.valueFormat[ClientId]
   implicit val serverIdFormat = Json.valueFormat[ServerId]
+  implicit val methodCallFormat = Json.valueFormat[Invocation]
+  implicit val requestObjectFormat = Json.format[RequestObject]
+
+  def deserialize(input: String): RequestObject = {
+    Json.parse(input).as[RequestObject]
+  }
 }
 
 
