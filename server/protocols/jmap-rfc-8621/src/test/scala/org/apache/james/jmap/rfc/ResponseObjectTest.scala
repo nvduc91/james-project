@@ -111,11 +111,11 @@ class ResponseObjectTest extends PlaySpec {
             |    }, "c1" ]
             |""".stripMargin)})
 
-      Json.toJson[Invocation](invocation) must be(JsSuccess(expectedInvocationJsArray))
+      Json.toJson[Invocation](invocation) must be(expectedInvocationJsArray)
     }
   }
 
-  "Deserialize RequestObject" must {
+  "Deserialize ResponseObject" must {
     "succeed " in {
       ResponseObject.deserialize(
         """
@@ -144,7 +144,7 @@ class ResponseObjectTest extends PlaySpec {
         """
           |{
           |  "sessionState": "75128aab4b1b",
-          |  "methodCalls": [
+          |  "methodResponses": [
           |    [ "Core/echo", {
           |      "arg1": "arg1data",
           |      "arg2": "arg2data"
@@ -163,16 +163,16 @@ class ResponseObjectTest extends PlaySpec {
               |      "arg1": "arg1data",
               |      "arg2": "arg2data"
               |    }, "c1" ]
-              |""".stripMargin).as[JsArray].append(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]).value)))))
+              |""".stripMargin).as[JsArray]), Invocation(Json.parse(
+            """[ "Core/echo2", {
+              |      "arg3": "arg3data",
+              |      "arg4": "arg4data"
+              |    }, "c2" ]
+              |""".stripMargin).as[JsArray]))))
     }
   }
 
-  "Serialize RequestObject" must {
+  "Serialize ResponseObject" must {
     "succeed " in {
       val requestObject: ResponseObject.ResponseObject = ResponseObject.ResponseObject(
         sessionState = ResponseObject.SessionState("75128aab4b1b"),
@@ -182,18 +182,8 @@ class ResponseObjectTest extends PlaySpec {
             |      "arg2": "arg2data"
             |    }, "c1" ]
             |""".stripMargin).as[JsArray])))
-      Json.prettyPrint(Json.toJson(requestObject)) must be(
-        """
-          {
-            "sessionState": "75128aab4b1b",
-            "methodCalls": [
-              [ "Core/echo", {
-                "arg1": "arg1data",
-                "arg2": "arg2data"
-              }, "c1" ]
-            ]
-          }
-          """)
+      Json.stringify(Json.toJson(requestObject)) must be(
+        """{"sessionState":"75128aab4b1b","methodResponses":[["Core/echo",{"arg1":"arg1data","arg2":"arg2data"},"c1"]]}""")
     }
   }
 }

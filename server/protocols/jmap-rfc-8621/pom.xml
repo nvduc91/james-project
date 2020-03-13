@@ -45,18 +45,22 @@
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-json_${scala.base}</artifactId>
-            <version>2.8.1</version>
+            <version>${play-json.version}</version>
         </dependency>
         <dependency>
             <groupId>org.scalatestplus.play</groupId>
             <artifactId>scalatestplus-play_${scala.base}</artifactId>
-            <version>4.0.3</version>
+            <version>${scalatestplus-play.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

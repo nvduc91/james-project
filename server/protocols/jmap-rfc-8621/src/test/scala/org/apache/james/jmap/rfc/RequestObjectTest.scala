@@ -144,7 +144,7 @@ class RequestObjectTest extends PlaySpec {
             |    }, "c1" ]
             |""".stripMargin)})
 
-      Json.toJson[Invocation](invocation) must be(JsSuccess(expectedInvocationJsArray))
+      Json.toJson[Invocation](invocation) must be(expectedInvocationJsArray)
     }
   }
 
@@ -196,37 +196,27 @@ class RequestObjectTest extends PlaySpec {
               |      "arg1": "arg1data",
               |      "arg2": "arg2data"
               |    }, "c1" ]
-              |""".stripMargin).as[JsArray].append(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]).value)))))
+              |""".stripMargin).as[JsArray]), Invocation(Json.parse(
+            """[ "Core/echo2", {
+              |      "arg3": "arg3data",
+              |      "arg4": "arg4data"
+              |    }, "c2" ]
+              |""".stripMargin).as[JsArray]))))
     }
   }
 
   "Serialize RequestObject" must {
     "succeed " in {
       val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
-        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
+        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
         methodCalls = Seq(Invocation(Json.parse(
           """[ "Core/echo", {
             |      "arg1": "arg1data",
             |      "arg2": "arg2data"
             |    }, "c1" ]
             |""".stripMargin).as[JsArray])))
-      Json.prettyPrint(Json.toJson(requestObject)) must be(
-        """
-          {
-            "using": [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:core2"],
-            "methodCalls": [
-              [ "Core/echo", {
-                "arg1": "arg1data",
-                "arg2": "arg2data"
-              }, "c1" ]
-            ]
-          }
-          """)
+      Json.stringify(Json.toJson(requestObject)) must be(
+        """{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:core2"],"methodCalls":[["Core/echo",{"arg1":"arg1data","arg2":"arg2data"},"c1"]]}""")
     }
   }
 }
