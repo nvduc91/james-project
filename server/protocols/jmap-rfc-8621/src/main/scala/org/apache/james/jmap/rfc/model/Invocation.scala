@@ -16,24 +16,32 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  * ***************************************************************/
-
 package org.apache.james.jmap.rfc.model
 
-import org.apache.james.jmap.rfc.model.Invocation.Invocation
+import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.functional.syntax._
 
-object RequestObject {
+object Invocation {
 
-  import play.api.libs.json._
+  case class MethodName(value: String) extends AnyVal
 
-  case class Capability(value: String) extends AnyVal
-  implicit val capabilityFormat: Format[Capability] = Json.valueFormat[Capability]
+  case class Arguments(value: JsObject) extends AnyVal
 
-  case class RequestObject(using: Seq[Capability], methodCalls: Seq[Invocation], createdIds: Option[CreatedIds] = None)
-  implicit val requestObjectRead: Format[RequestObject] = Json.format[RequestObject]
+  case class MethodCallId(value: String) extends AnyVal
 
-  def deserialize(input: String): RequestObject = {
-    Json.parse(input).as[RequestObject]
-  }
+  case class Invocation(methodName: MethodName, arguments: Arguments, methodCallId: MethodCallId)
+
+  implicit val methodNameFormat: Format[MethodName] = Json.valueFormat[MethodName]
+  implicit val argumentFormat: Format[Arguments] = Json.valueFormat[Arguments]
+  implicit val methodCallIdFormat: Format[MethodCallId] = Json.valueFormat[MethodCallId]
+  val invocationRead: Reads[Invocation] = (
+    (JsPath \ 0).read[MethodName] and
+      (JsPath \ 1).read[Arguments] and
+      (JsPath \ 2).read[MethodCallId]
+    ) (Invocation.apply _)
+
+  val invocationWrite: Writes[Invocation] = (invocation: Invocation) =>
+    Json.arr(invocation.methodName, invocation.arguments, invocation.methodCallId)
+  implicit val invocationFormat: Format[Invocation] = Format(invocationRead, invocationWrite)
 }
-
-

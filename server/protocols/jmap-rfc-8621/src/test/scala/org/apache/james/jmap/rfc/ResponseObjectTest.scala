@@ -15,13 +15,14 @@
  * KIND, either express or implied.  See the License for the    *
  * specific language governing permissions and limitations      *
  * under the License.                                           *
- * ***************************************************************/
+ * **************************************************************/
 
 package org.apache.james.jmap.rfc
 
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, Invocation, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
-import org.apache.james.jmap.rfc.model.ResponseObject.{SessionState, Invocation}
 import org.apache.james.jmap.rfc.model.ResponseObject
+import org.apache.james.jmap.rfc.model.ResponseObject.SessionState
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
@@ -52,71 +53,13 @@ class ResponseObjectTest extends PlaySpec {
     }
   }
 
-  "Deserialize Invocation" must {
-    "succeed values" in {
-      val invocationJsValue: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)},
-        {Json.parse(
-          """[ "Core/echo2", {
-            |      "arg3": "arg3data",
-            |      "arg4": "arg4data"
-            |    }, "c2" ]
-            |""".stripMargin)
-        })
-      Json.fromJson[Invocation](invocationJsValue) must be(JsSuccess(Invocation(invocationJsValue)))
-    }
-
-    "succeed value" in {
-      val invocationJsValue: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)})
-      Json.fromJson[Invocation](invocationJsValue) must be(JsSuccess(Invocation(invocationJsValue)))
-    }
-
-    "failed with wrong value type" in {
-      val invocationJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Invocation](invocationJsValue) must not be (JsSuccess(Invocation(Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)}))))
-    }
-  }
-
-  "Serialize Invocation" must {
-    "succeed " in {
-      val invocation: Invocation = Invocation(Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)}))
-      val expectedInvocationJsArray: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)})
-
-      Json.toJson[Invocation](invocation) must be(expectedInvocationJsArray)
-    }
-  }
-
   "Deserialize ResponseObject" must {
     "succeed " in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
+
       ResponseObject.deserialize(
         """
           |{
@@ -131,15 +74,15 @@ class ResponseObjectTest extends PlaySpec {
           |""".stripMargin) must be(
         ResponseObject.ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
-          methodResponses = Seq(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]))))
+          methodResponses = Seq(expectedInvocation)))
     }
 
     "succeed with many Capability, methodCalls" in {
+      val expectedInvocation1: Invocation = Invocation(MethodName("Core/echo"),
+        Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data")), MethodCallId("c1"))
+      val expectedInvocation2: Invocation = Invocation(MethodName("Core/echo2"),
+        Arguments(Json.obj("arg3" -> "arg3data", "arg4" -> "arg4data")), MethodCallId("c2"))
+
       ResponseObject.deserialize(
         """
           |{
@@ -158,32 +101,35 @@ class ResponseObjectTest extends PlaySpec {
           |""".stripMargin) must be(
         ResponseObject.ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
-          methodResponses = Seq(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]), Invocation(Json.parse(
-            """[ "Core/echo2", {
-              |      "arg3": "arg3data",
-              |      "arg4": "arg4data"
-              |    }, "c2" ]
-              |""".stripMargin).as[JsArray]))))
+          methodResponses = Seq(expectedInvocation1, expectedInvocation2)))
     }
   }
 
   "Serialize ResponseObject" must {
     "succeed " in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val invocation: Invocation = Invocation(methodName, argument, methodCallId)
+
       val requestObject: ResponseObject.ResponseObject = ResponseObject.ResponseObject(
         sessionState = ResponseObject.SessionState("75128aab4b1b"),
-        methodResponses = Seq(Invocation(Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin).as[JsArray])))
-      Json.stringify(Json.toJson(requestObject)) must be(
-        """{"sessionState":"75128aab4b1b","methodResponses":[["Core/echo",{"arg1":"arg1data","arg2":"arg2data"},"c1"]]}""")
+        methodResponses = Seq(invocation))
+
+      val expectedJson = Json.prettyPrint(Json.parse(
+        """
+          |{
+          |  "sessionState": "75128aab4b1b",
+          |  "methodResponses": [
+          |    [ "Core/echo", {
+          |      "arg1": "arg1data",
+          |      "arg2": "arg2data"
+          |    }, "c1" ]
+          |  ]
+          |}
+          |""".stripMargin))
+
+      Json.prettyPrint(Json.toJson(requestObject)) must be(expectedJson)
     }
   }
 }

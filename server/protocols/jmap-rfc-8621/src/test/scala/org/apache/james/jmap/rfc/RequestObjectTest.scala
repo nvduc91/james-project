@@ -19,137 +19,54 @@
 
 package org.apache.james.jmap.rfc
 
-import org.apache.james.jmap.rfc.model.RequestObject
-import org.apache.james.jmap.rfc.model.RequestObject.{Capability, ClientId, Invocation, ServerId}
+import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, Invocation, MethodCallId, MethodName}
+import org.apache.james.jmap.rfc.model.{CreatedIds, RequestObject}
+import org.apache.james.jmap.rfc.model.RequestObject.Capability
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
 class RequestObjectTest extends PlaySpec {
 
   "Deserialize Capability" must {
-    "succeed with 1 value" in {
+    "succeed when deserialize from JsString" in {
       val capabilityJsValue: JsValue = JsString("org.com.test.1")
-      Json.fromJson[Capability](capabilityJsValue) must be(JsSuccess(Capability("org.com.test.1")))
+      val actualCapability = Json.fromJson[Capability](capabilityJsValue)
+
+      actualCapability must be(JsSuccess(Capability("org.com.test.1")))
+      actualCapability.get mustBe a[Capability]
     }
 
-    "failed with wrong value type" in {
+    "be instanceOf JsError when deserialize with wrong value type" in {
       val capabilityJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](capabilityJsValue) must not be (JsSuccess(Capability("org.com.test.1")))
+      Json.fromJson[Capability](capabilityJsValue) mustBe a[JsError]
     }
 
-    "failed with wrong class type" in {
-      val capabilityJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ClientId](capabilityJsValue) must not be (JsSuccess(Capability("org.com.test.1")))
+    "succeed with MethodName value class type but not same instanceOf Capability" in {
+      val capabilityJsValue: JsValue = JsString("org.com.test.1")
+      val actualCapability = Json.fromJson[MethodName](capabilityJsValue).get
+
+      actualCapability must not be a[Capability]
+      actualCapability mustBe a[MethodName]
     }
   }
 
   "Serialize Capability" must {
-    "succeed " in {
+    "succeed when write to string" in {
       val capability: Capability = Capability("org.com.test.1")
       val expectedCapability: JsValue = JsString("org.com.test.1")
+
       Json.toJson[Capability](capability) must be(expectedCapability)
     }
   }
 
-  "Deserialize ClientId" must {
-    "succeed " in {
-      val clientIdJsValue: JsValue = JsString("Core/echo")
-      Json.fromJson[ClientId](clientIdJsValue) must be(JsSuccess(ClientId("Core/echo")))
-    }
-
-    "failed with wrong class type" in {
-      val clientIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](clientIdJsValue) must not be (JsSuccess(ClientId("Core/echo")))
-    }
-
-    "failed with wrong value type" in {
-      val clientIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ClientId](clientIdJsValue) must not be (JsSuccess(ClientId("Core/echo")))
-    }
-  }
-
-  "Deserialize ServerId" must {
-    "succeed " in {
-      val serverIdJsValue: JsValue = JsString("Server 1 for test")
-      Json.fromJson[ServerId](serverIdJsValue) must be(JsSuccess(ServerId("Server 1 for test")))
-    }
-
-    "failed with wrong class type" in {
-      val serverIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Capability](serverIdJsValue) must not be (JsSuccess(ServerId("Server 1 for test")))
-    }
-
-    "failed with wrong value type" in {
-      val serverIdJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[ServerId](serverIdJsValue) must not be (JsSuccess(ServerId("Server 1 for test")))
-    }
-  }
-
-  "Deserialize Invocation" must {
-    "succeed values" in {
-      val invocationJsValue: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)},
-        {Json.parse(
-          """[ "Core/echo2", {
-            |      "arg3": "arg3data",
-            |      "arg4": "arg4data"
-            |    }, "c2" ]
-            |""".stripMargin)
-        })
-      Json.fromJson[Invocation](invocationJsValue) must be(JsSuccess(Invocation(invocationJsValue)))
-    }
-
-    "succeed value" in {
-      val invocationJsValue: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)})
-      Json.fromJson[Invocation](invocationJsValue) must be(JsSuccess(Invocation(invocationJsValue)))
-    }
-
-    "failed with wrong value type" in {
-      val invocationJsValue: JsValue = JsBoolean(true)
-      Json.fromJson[Invocation](invocationJsValue) must not be (JsSuccess(Invocation(Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)}))))
-    }
-  }
-
-  "Serialize Invocation" must {
-    "succeed " in {
-      val invocation: Invocation = Invocation(Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)}))
-      val expectedInvocationJsArray: JsArray = Json.arr({
-        Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin)})
-
-      Json.toJson[Invocation](invocation) must be(expectedInvocationJsArray)
-    }
-  }
-
   "Deserialize RequestObject" must {
-    "succeed " in {
+    "succeed when deserialize from JsString without CreatedIds" in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
+
       RequestObject.deserialize(
         """
           |{
@@ -164,15 +81,43 @@ class RequestObjectTest extends PlaySpec {
           |""".stripMargin) must be(
         RequestObject.RequestObject(
           using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
-          methodCalls = Seq(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]))))
+          methodCalls = Seq(expectedInvocation)))
     }
 
-    "succeed with many Capability, methodCalls" in {
+    "succeed when deserialize from JsString withCreatedIds" in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
+      val expectedCreatedIds: CreatedIds = CreatedIds(Map(
+        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+      ))
+
+      RequestObject.deserialize(
+        """
+          |{
+          |  "using": [ "urn:ietf:params:jmap:core"],
+          |  "methodCalls": [
+          |    [ "Core/echo", {
+          |      "arg1": "arg1data",
+          |      "arg2": "arg2data"
+          |    }, "c1" ]
+          |  ],
+          |  "createdIds":{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}
+          |}
+          |""".stripMargin) must be(
+        RequestObject.RequestObject(
+          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
+          methodCalls = Seq(expectedInvocation),
+          Option(expectedCreatedIds)))
+    }
+
+    "succeed with many Capability, methodCalls without CreatedIds" in {
+      val expectedInvocation1: Invocation = Invocation(MethodName("Core/echo"),
+        Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data")), MethodCallId("c1"))
+      val expectedInvocation2: Invocation = Invocation(MethodName("Core/echo2"),
+        Arguments(Json.obj("arg3" -> "arg3data","arg4" -> "arg4data")), MethodCallId("c2"))
+
       RequestObject.deserialize(
         """
           |{
@@ -191,32 +136,65 @@ class RequestObjectTest extends PlaySpec {
           |""".stripMargin) must be(
         RequestObject.RequestObject(
           using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
-          methodCalls = Seq(Invocation(Json.parse(
-            """[ "Core/echo", {
-              |      "arg1": "arg1data",
-              |      "arg2": "arg2data"
-              |    }, "c1" ]
-              |""".stripMargin).as[JsArray]), Invocation(Json.parse(
-            """[ "Core/echo2", {
-              |      "arg3": "arg3data",
-              |      "arg4": "arg4data"
-              |    }, "c2" ]
-              |""".stripMargin).as[JsArray]))))
+          methodCalls = Seq(expectedInvocation1, expectedInvocation2)))
     }
   }
 
   "Serialize RequestObject" must {
-    "succeed " in {
+    "succeed when write to string without CreatedIds" in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val invocation: Invocation = Invocation(methodName, argument, methodCallId)
+
       val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
         using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
-        methodCalls = Seq(Invocation(Json.parse(
-          """[ "Core/echo", {
-            |      "arg1": "arg1data",
-            |      "arg2": "arg2data"
-            |    }, "c1" ]
-            |""".stripMargin).as[JsArray])))
-      Json.stringify(Json.toJson(requestObject)) must be(
-        """{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:core2"],"methodCalls":[["Core/echo",{"arg1":"arg1data","arg2":"arg2data"},"c1"]]}""")
+        methodCalls = Seq(invocation))
+      val expectedValue = Json.prettyPrint(Json.parse(
+        """
+          |{
+          |  "using": [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:core2"],
+          |  "methodCalls": [
+          |    [ "Core/echo", {
+          |      "arg1": "arg1data",
+          |      "arg2": "arg2data"
+          |    }, "c1" ]
+          |  ]
+          |}
+          |""".stripMargin))
+
+      Json.prettyPrint(Json.toJson(requestObject)) must be(expectedValue)
+    }
+
+    "succeed when write to string with CreatedIds" in {
+      val methodName: MethodName = MethodName("Core/echo")
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val invocation: Invocation = Invocation(methodName, argument, methodCallId)
+      val createdIds: CreatedIds = CreatedIds(Map(
+        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+      ))
+      val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
+        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
+        methodCalls = Seq(invocation),
+        Option(createdIds))
+
+      val expectedValue = Json.prettyPrint(Json.parse(
+        """
+          |{
+          |  "using": [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:core2"],
+          |  "methodCalls": [
+          |    [ "Core/echo", {
+          |      "arg1": "arg1data",
+          |      "arg2": "arg2data"
+          |    }, "c1" ]
+          |  ],
+          |  "createdIds":{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}
+          |}
+          |""".stripMargin))
+
+      Json.prettyPrint(Json.toJson(requestObject)) must be(expectedValue)
     }
   }
+
 }
