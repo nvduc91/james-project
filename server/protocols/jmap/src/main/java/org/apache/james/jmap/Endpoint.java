@@ -17,12 +17,40 @@
  * under the License.                                           *
  ****************************************************************/
 
-package org.apache.james.jmap.http;
+package org.apache.james.jmap;
 
-public interface JMAPUrls {
-    String JMAP = "/jmap";
-    String AUTHENTICATION = "/authentication";
-    String DOWNLOAD = "/download";
-    String UPLOAD = "/upload";
-    String NOT_IMPLEMENTED = "/notImplemented";
+import java.util.Objects;
+
+public class Endpoint {
+    private final Verb verb;
+    private final String path;
+
+    public Endpoint(Verb verb, String path) {
+        this.verb = verb;
+        this.path = path;
+    }
+
+    public Verb getVerb() {
+        return verb;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (o instanceof Endpoint) {
+            Endpoint endpoint = (Endpoint) o;
+
+            return Objects.equals(this.verb, endpoint.verb)
+                && Objects.equals(this.path, endpoint.path);
+        }
+        return false;
+    }
+
+    @Override
+    public final int hashCode() {
+        return Objects.hash(verb, path);
+    }
 }
