@@ -18,7 +18,8 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc
 
-import org.apache.james.jmap.rfc.model.Invocation.{Arguments, Invocation, MethodCallId, MethodName}
+import org.apache.james.jmap.rfc.model.Invocation
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
@@ -27,10 +28,10 @@ class InvocationTest extends PlaySpec {
   "Deserialize MethodName" must {
     "succeed when deserialize from JsString" in {
       val jsValue: JsValue = JsString("Core/echo")
-      val actualMethodName = Json.fromJson[MethodName](jsValue)
+      val actualValue = Json.fromJson[MethodName](jsValue)
 
-      actualMethodName must be(JsSuccess(MethodName("Core/echo")))
-      actualMethodName.get mustBe a[MethodName]
+      actualValue must be(JsSuccess(MethodName("Core/echo")))
+      actualValue.get mustBe a[MethodName]
     }
 
     "be instanceOf JsError when deserialize with wrong value type" in {
@@ -40,10 +41,10 @@ class InvocationTest extends PlaySpec {
 
     "succeed with Capability value class type but not same instanceOf MethodName" in {
       val jsValue: JsValue = JsString("Core/echo")
-      val actualMethodName = Json.fromJson[Capability](jsValue).get
+      val actualValue = Json.fromJson[Capability](jsValue).get
 
-      actualMethodName must not be a[MethodName]
-      actualMethodName mustBe a[Capability]
+      actualValue must not be a[MethodName]
+      actualValue mustBe a[Capability]
     }
   }
 
@@ -74,17 +75,17 @@ class InvocationTest extends PlaySpec {
       val jsValue: JsValue = JsString("c1")
       val actualValue = Json.fromJson[Capability](jsValue).get
 
-      actualValue must not be a[MethodName]
+      actualValue must not be a[MethodCallId]
       actualValue mustBe a[Capability]
     }
   }
 
   "Serialize MethodCallId" must {
     "succeed when write to string" in {
-      val methodName: MethodCallId = MethodCallId("c1")
-      val expectedMethodName: JsValue = JsString("c1")
+      val methodCallId: MethodCallId = MethodCallId("c1")
+      val expectedMethodCallId: JsValue = JsString("c1")
 
-      Json.toJson[MethodCallId](methodName) must be(expectedMethodName)
+      Json.toJson[MethodCallId](methodCallId) must be(expectedMethodCallId)
     }
   }
 

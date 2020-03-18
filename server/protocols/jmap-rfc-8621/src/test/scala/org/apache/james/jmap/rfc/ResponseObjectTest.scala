@@ -19,10 +19,10 @@
 
 package org.apache.james.jmap.rfc
 
-import org.apache.james.jmap.rfc.model.Invocation.{Arguments, Invocation, MethodCallId, MethodName}
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
-import org.apache.james.jmap.rfc.model.ResponseObject
 import org.apache.james.jmap.rfc.model.ResponseObject.SessionState
+import org.apache.james.jmap.rfc.model.{Invocation, ResponseObject}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
@@ -72,7 +72,7 @@ class ResponseObjectTest extends PlaySpec {
           |  "sessionState": "75128aab4b1b"
           |}
           |""".stripMargin) must be(
-        ResponseObject.ResponseObject(
+        ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
           methodResponses = Seq(expectedInvocation)))
     }
@@ -99,7 +99,7 @@ class ResponseObjectTest extends PlaySpec {
           |  ]
           |}
           |""".stripMargin) must be(
-        ResponseObject.ResponseObject(
+        ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
           methodResponses = Seq(expectedInvocation1, expectedInvocation2)))
     }
@@ -112,7 +112,7 @@ class ResponseObjectTest extends PlaySpec {
       val methodCallId: MethodCallId = MethodCallId("c1")
       val invocation: Invocation = Invocation(methodName, argument, methodCallId)
 
-      val requestObject: ResponseObject.ResponseObject = ResponseObject.ResponseObject(
+      val requestObject: ResponseObject = ResponseObject(
         sessionState = ResponseObject.SessionState("75128aab4b1b"),
         methodResponses = Seq(invocation))
 

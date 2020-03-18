@@ -20,9 +20,9 @@
 package org.apache.james.jmap.rfc
 
 import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
-import org.apache.james.jmap.rfc.model.Invocation.{Arguments, Invocation, MethodCallId, MethodName}
-import org.apache.james.jmap.rfc.model.{CreatedIds, RequestObject}
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
+import org.apache.james.jmap.rfc.model.{CreatedIds, Invocation, RequestObject}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
@@ -79,9 +79,9 @@ class RequestObjectTest extends PlaySpec {
           |  ]
           |}
           |""".stripMargin) must be(
-        RequestObject.RequestObject(
-          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
-          methodCalls = Seq(expectedInvocation)))
+        JsSuccess(RequestObject(
+          using = Seq(Capability("urn:ietf:params:jmap:core")),
+          methodCalls = Seq(expectedInvocation))))
     }
 
     "succeed when deserialize from JsString withCreatedIds" in {
@@ -106,10 +106,10 @@ class RequestObjectTest extends PlaySpec {
           |  "createdIds":{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}
           |}
           |""".stripMargin) must be(
-        RequestObject.RequestObject(
-          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core")),
+        JsSuccess(RequestObject(
+          using = Seq(Capability("urn:ietf:params:jmap:core")),
           methodCalls = Seq(expectedInvocation),
-          Option(expectedCreatedIds)))
+          Option(expectedCreatedIds))))
     }
 
     "succeed with many Capability, methodCalls without CreatedIds" in {
@@ -134,9 +134,9 @@ class RequestObjectTest extends PlaySpec {
           |  ]
           |}
           |""".stripMargin) must be(
-        RequestObject.RequestObject(
-          using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
-          methodCalls = Seq(expectedInvocation1, expectedInvocation2)))
+        JsSuccess(RequestObject(
+          using = Seq(Capability("urn:ietf:params:jmap:core"), Capability("urn:ietf:params:jmap:core2")),
+          methodCalls = Seq(expectedInvocation1, expectedInvocation2))))
     }
   }
 
@@ -147,8 +147,8 @@ class RequestObjectTest extends PlaySpec {
       val methodCallId: MethodCallId = MethodCallId("c1")
       val invocation: Invocation = Invocation(methodName, argument, methodCallId)
 
-      val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
-        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
+      val requestObject: RequestObject = RequestObject(
+        using = Seq(Capability("urn:ietf:params:jmap:core"), Capability("urn:ietf:params:jmap:core2")),
         methodCalls = Seq(invocation))
       val expectedValue = Json.prettyPrint(Json.parse(
         """
@@ -174,8 +174,8 @@ class RequestObjectTest extends PlaySpec {
       val createdIds: CreatedIds = CreatedIds(Map(
         ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
       ))
-      val requestObject: RequestObject.RequestObject = RequestObject.RequestObject(
-        using = Seq(RequestObject.Capability("urn:ietf:params:jmap:core"), RequestObject.Capability("urn:ietf:params:jmap:core2")),
+      val requestObject: RequestObject = RequestObject(
+        using = Seq(Capability("urn:ietf:params:jmap:core"), Capability("urn:ietf:params:jmap:core2")),
         methodCalls = Seq(invocation),
         Option(createdIds))
 

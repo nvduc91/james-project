@@ -31,7 +31,7 @@ class CreatedIdsTest extends PlaySpec {
       val id: Id = Id(idValue)
       val expectedClientId: ClientId = ClientId(id)
 
-      Json.fromJson[ClientId](Json.toJson[Id](id)) must be (JsSuccess(expectedClientId))
+      Json.fromJson[ClientId](Json.toJson[Id](id)) === expectedClientId
     }
   }
 
@@ -40,7 +40,7 @@ class CreatedIdsTest extends PlaySpec {
       val clientId: ClientId = ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
       val expectedValue = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
-      Json.toJson[ClientId](clientId) === (expectedValue)
+      Json.toJson[ClientId](clientId) === expectedValue
     }
   }
 
@@ -59,15 +59,14 @@ class CreatedIdsTest extends PlaySpec {
       val serverId: ServerId = ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
       val expectedValue = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
-      Json.toJson[ServerId](serverId) === (expectedValue)
+      Json.toJson[ServerId](serverId) === expectedValue
     }
   }
 
   "Deserialize CreatedIds" must {
     "succeed with a Map with value" in {
       val jsonMapValue: String = """{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}"""
-      val mapValue: Map[ClientId, ServerId] = Map(
-        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")))
+      val mapValue: Map[ClientId, ServerId] = Map(ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")))
       val expectedValue: CreatedIds = CreatedIds(mapValue)
       Json.fromJson[CreatedIds](Json.parse(jsonMapValue)) must be (JsSuccess(expectedValue))
     }

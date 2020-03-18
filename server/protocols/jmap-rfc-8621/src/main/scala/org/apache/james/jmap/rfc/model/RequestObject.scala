@@ -19,20 +19,21 @@
 
 package org.apache.james.jmap.rfc.model
 
-import org.apache.james.jmap.rfc.model.Invocation.Invocation
+import org.apache.james.jmap.rfc.model.RequestObject.Capability
+import play.api.libs.json._
+
+case class RequestObject(using: Seq[Capability], methodCalls: Seq[Invocation], createdIds: Option[CreatedIds] = None)
 
 object RequestObject {
 
-  import play.api.libs.json._
-
   case class Capability(value: String) extends AnyVal
+
   implicit val capabilityFormat: Format[Capability] = Json.valueFormat[Capability]
 
-  case class RequestObject(using: Seq[Capability], methodCalls: Seq[Invocation], createdIds: Option[CreatedIds] = None)
   implicit val requestObjectRead: Format[RequestObject] = Json.format[RequestObject]
 
-  def deserialize(input: String): RequestObject = {
-    Json.parse(input).as[RequestObject]
+  def deserialize(input: String): JsResult[RequestObject] = {
+    Json.parse(input).validate[RequestObject]
   }
 }
 

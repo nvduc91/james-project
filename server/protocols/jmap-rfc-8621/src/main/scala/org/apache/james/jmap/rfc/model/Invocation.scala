@@ -18,9 +18,12 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc.model
 
+import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
+
+case class Invocation(methodName: MethodName, arguments: Arguments, methodCallId: MethodCallId)
 
 object Invocation {
 
@@ -29,8 +32,6 @@ object Invocation {
   case class Arguments(value: JsObject) extends AnyVal
 
   case class MethodCallId(value: String) extends AnyVal
-
-  case class Invocation(methodName: MethodName, arguments: Arguments, methodCallId: MethodCallId)
 
   implicit val methodNameFormat: Format[MethodName] = Json.valueFormat[MethodName]
   implicit val argumentFormat: Format[Arguments] = Json.valueFormat[Arguments]
