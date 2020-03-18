@@ -20,22 +20,20 @@
 package org.apache.james.jmap;
 
 import java.util.Arrays;
-import java.util.Optional;
+
+import com.google.common.base.Preconditions;
 
 public enum Version {
     DRAFT("draft"),
     RFC8621("rfc-8621");
 
-    public static Version of(Optional<String> maybeVersion) {
-        return maybeVersion.map(version -> Version.of(version)
-                .orElseThrow(() -> new IllegalArgumentException(version + " is not a supported version")))
-            .orElse(DRAFT);
-    }
+    public static Version of(String version) {
+        Preconditions.checkNotNull(version);
 
-    private static Optional<Version> of(String version) {
         return Arrays.stream(values())
             .filter(jmapVersion -> jmapVersion.version.equalsIgnoreCase(version))
-            .findFirst();
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(version + " is not a supported version"));
     }
 
     private final String version;

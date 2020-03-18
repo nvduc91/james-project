@@ -22,30 +22,35 @@ package org.apache.james.jmap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 
 class VersionTest {
     @Test
     void ofShouldReturnCorrectValue() {
-        Optional<String> version = Optional.of("rfc-8621");
+        String version = "rfc-8621";
 
         assertThat(Version.of(version)).isEqualTo(Version.RFC8621);
     }
 
     @Test
     void ofShouldThrowWhenVersionNotKnown() {
-        Optional<String> version = Optional.of("unknown");
+        String version = "unknown";
 
         assertThatThrownBy(() -> Version.of(version))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void ofShouldReturnDefaultWhenNoVersion() {
-        Optional<String> version = Optional.empty();
+    void ofShouldThrowWhenVersionIsNull() {
+        assertThatThrownBy(() -> Version.of(null))
+            .isInstanceOf(NullPointerException.class);
+    }
 
-        assertThat(Version.of(version)).isEqualTo(Version.DRAFT);
+    @Test
+    void ofShouldThrowWhenVersionIsEmpty() {
+        String version = "";
+
+        assertThatThrownBy(() -> Version.of(version))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }

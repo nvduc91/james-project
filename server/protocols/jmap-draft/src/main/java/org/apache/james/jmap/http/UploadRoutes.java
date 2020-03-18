@@ -27,9 +27,12 @@ import static org.apache.james.jmap.JMAPUrls.UPLOAD;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.james.jmap.Endpoint;
+import org.apache.james.jmap.JMAPRoute;
 import org.apache.james.jmap.JMAPRoutes;
 import org.apache.james.jmap.draft.exceptions.BadRequestException;
 import org.apache.james.jmap.draft.exceptions.InternalErrorException;
@@ -48,11 +51,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 
+import io.netty.handler.codec.http.HttpMethod;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import reactor.netty.http.server.HttpServerRoutes;
 
 public class UploadRoutes implements JMAPRoutes {
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadRoutes.class);
@@ -80,9 +83,17 @@ public class UploadRoutes implements JMAPRoutes {
     }
 
     @Override
-    public HttpServerRoutes define(HttpServerRoutes builder) {
-        return builder.post(UPLOAD, JMAPRoutes.corsHeaders(this::post))
-            .options(UPLOAD, CORS_CONTROL);
+    public Stream<JMAPRoute> routes() {
+        return Stream.of(
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.POST, UPLOAD))
+                .action(this::post)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.OPTIONS, UPLOAD))
+                .action(CORS_CONTROL)
+                .noCorsHeaders()
+        );
     }
 
     private Mono<Void> post(HttpServerRequest request, HttpServerResponse response)  {

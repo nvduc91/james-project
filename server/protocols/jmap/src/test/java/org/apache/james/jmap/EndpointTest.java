@@ -26,6 +26,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 class EndpointTest {
     @Test
     void shouldRespectBeanContract() {
-        EqualsVerifier.forClass(Endpoint.class).verify();
+        EqualsVerifier.forClass(Endpoint.class)
+            .withIgnoredFields("uriPathTemplate")
+            .verify();
     }
 }

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
+import org.apache.james.jmap.JMAPRoute;
 import org.apache.james.jmap.draft.methods.ErrorResponse;
 import org.apache.james.jmap.draft.methods.Method;
 import org.apache.james.jmap.draft.methods.RequestHandler;
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.netty.handler.codec.http.HttpMethod;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
@@ -71,9 +73,14 @@ public class JMAPApiRoutesTest {
         JMAPApiRoutes jmapApiRoutes = new JMAPApiRoutes(requestHandler, new RecordingMetricFactory(),
             mockedAuthFilter, mockedUserProvisionner, mockedMailboxesProvisionner);
 
+        JMAPRoute postApiRoute = jmapApiRoutes.routes()
+            .filter(jmapRoute -> jmapRoute.getEndpoint().getMethod().equals(HttpMethod.POST))
+            .findFirst()
+            .get();
+
         server = HttpServer.create()
             .port(RANDOM_PORT)
-            .route(jmapApiRoutes::define)
+            .route(routes -> routes.post(postApiRoute.getEndpoint().getPath(), (req, res) -> postApiRoute.getAction().handleRequest(req, res)))
             .bindNow();
 
         RestAssured.requestSpecification = new RequestSpecBuilder()

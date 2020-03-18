@@ -21,21 +21,31 @@ package org.apache.james.jmap;
 
 import java.util.Objects;
 
-public class Endpoint {
-    private final Verb verb;
-    private final String path;
+import io.netty.handler.codec.http.HttpMethod;
+import reactor.netty.http.server.HttpServerRequest;
 
-    public Endpoint(Verb verb, String path) {
-        this.verb = verb;
+public class Endpoint {
+    private final HttpMethod method;
+    private final String path;
+    private final UriPathTemplate uriPathTemplate;
+
+    public Endpoint(HttpMethod method, String path) {
+        this.method = method;
         this.path = path;
+        this.uriPathTemplate = new UriPathTemplate(path);
     }
 
-    public Verb getVerb() {
-        return verb;
+    public HttpMethod getMethod() {
+        return method;
     }
 
     public String getPath() {
         return path;
+    }
+
+    public boolean matches(HttpServerRequest request) {
+        return method.equals(request.method())
+            && uriPathTemplate.matches(request.uri());
     }
 
     @Override
@@ -43,7 +53,7 @@ public class Endpoint {
         if (o instanceof Endpoint) {
             Endpoint endpoint = (Endpoint) o;
 
-            return Objects.equals(this.verb, endpoint.verb)
+            return Objects.equals(this.method, endpoint.method)
                 && Objects.equals(this.path, endpoint.path);
         }
         return false;
@@ -51,6 +61,6 @@ public class Endpoint {
 
     @Override
     public final int hashCode() {
-        return Objects.hash(verb, path);
+        return Objects.hash(method, path);
     }
 }
