@@ -20,7 +20,7 @@
 package org.apache.james.jmap.rfc.model
 
 import org.apache.james.jmap.rfc.model.ResponseObject.SessionState
-import play.api.libs.json.Json
+import play.api.libs.json.{JsResult, Json}
 
 case class ResponseObject(sessionState: SessionState, methodResponses: Seq[Invocation])
 
@@ -31,8 +31,7 @@ object ResponseObject {
 
   implicit val responseObjectFormat = Json.format[ResponseObject]
 
-  def deserialize(input: String): ResponseObject = {
-    Json.parse(input).as[ResponseObject]
+  def deserialize(input: String): JsResult[ResponseObject] = {
+    Json.parse(input).validate[ResponseObject]
   }
-
 }

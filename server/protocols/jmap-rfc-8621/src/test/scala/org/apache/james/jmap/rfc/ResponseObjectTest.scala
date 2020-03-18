@@ -72,9 +72,9 @@ class ResponseObjectTest extends PlaySpec {
           |  "sessionState": "75128aab4b1b"
           |}
           |""".stripMargin) must be(
-        ResponseObject(
+        JsSuccess(ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
-          methodResponses = Seq(expectedInvocation)))
+          methodResponses = Seq(expectedInvocation))))
     }
 
     "succeed with many Capability, methodCalls" in {
@@ -99,9 +99,9 @@ class ResponseObjectTest extends PlaySpec {
           |  ]
           |}
           |""".stripMargin) must be(
-        ResponseObject(
+        JsSuccess(ResponseObject(
           sessionState = ResponseObject.SessionState("75128aab4b1b"),
-          methodResponses = Seq(expectedInvocation1, expectedInvocation2)))
+          methodResponses = Seq(expectedInvocation1, expectedInvocation2))))
     }
   }
 
