@@ -18,17 +18,17 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc
 
+import eu.timepit.refined.api.Refined
 import org.apache.james.jmap.rfc.model.CreatedIds
 import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsSuccess, Json}
 
 class CreatedIdsTest extends PlaySpec {
+  private val id: Id = Id(Refined.unsafeApply("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
 
   "Deserialize ClientId" must {
     "succeed with JsString" in {
-      val idValue: String = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
-      val id: Id = Id(idValue)
       val expectedClientId: ClientId = ClientId(id)
 
       Json.fromJson[ClientId](Json.toJson[Id](id)) === expectedClientId
@@ -37,7 +37,7 @@ class CreatedIdsTest extends PlaySpec {
 
   "Serialize ClientId" must {
     "succeed" in {
-      val clientId: ClientId = ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+      val clientId: ClientId = ClientId(id)
       val expectedValue = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
       Json.toJson[ClientId](clientId) === expectedValue
@@ -46,8 +46,6 @@ class CreatedIdsTest extends PlaySpec {
 
   "Deserialize ServerId" must {
     "succeed with JsString" in {
-      val idValue: String = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
-      val id: Id = Id(idValue)
       val expectedServerId: ServerId = ServerId(id)
 
       Json.fromJson[ServerId](Json.toJson[Id](id)) must be (JsSuccess(expectedServerId))
@@ -56,7 +54,7 @@ class CreatedIdsTest extends PlaySpec {
 
   "Serialize ServerId" must {
     "succeed" in {
-      val serverId: ServerId = ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+      val serverId: ServerId = ServerId(id)
       val expectedValue = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
       Json.toJson[ServerId](serverId) === expectedValue
@@ -66,7 +64,7 @@ class CreatedIdsTest extends PlaySpec {
   "Deserialize CreatedIds" must {
     "succeed with a Map with value" in {
       val jsonMapValue: String = """{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}"""
-      val mapValue: Map[ClientId, ServerId] = Map(ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")))
+      val mapValue: Map[ClientId, ServerId] = Map(ClientId(id) -> ServerId(id))
       val expectedValue: CreatedIds = CreatedIds(mapValue)
       Json.fromJson[CreatedIds](Json.parse(jsonMapValue)) must be (JsSuccess(expectedValue))
     }
@@ -84,7 +82,7 @@ class CreatedIdsTest extends PlaySpec {
       val expectedValue: String = Json.prettyPrint(Json.parse(
       """{"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8":"aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"}"""))
       val mapValue: Map[ClientId, ServerId] = Map(
-        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")))
+        ClientId(id) -> ServerId(id))
 
       val createdIds: CreatedIds = CreatedIds(mapValue)
       Json.prettyPrint(Json.toJson(createdIds)) must be(expectedValue)

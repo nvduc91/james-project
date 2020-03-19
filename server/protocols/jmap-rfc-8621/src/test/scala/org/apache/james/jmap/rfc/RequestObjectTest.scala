@@ -19,6 +19,7 @@
 
 package org.apache.james.jmap.rfc
 
+import eu.timepit.refined.api.Refined
 import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
 import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
@@ -27,6 +28,7 @@ import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
 class RequestObjectTest extends PlaySpec {
+  private val id: Id = Id(Refined.unsafeApply("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
 
   "Deserialize Capability" must {
     "succeed when deserialize from JsString" in {
@@ -90,7 +92,7 @@ class RequestObjectTest extends PlaySpec {
       val methodCallId: MethodCallId = MethodCallId("c1")
       val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
       val expectedCreatedIds: CreatedIds = CreatedIds(Map(
-        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+        ClientId(id) -> ServerId(id)
       ))
 
       RequestObject.deserialize(
@@ -172,7 +174,7 @@ class RequestObjectTest extends PlaySpec {
       val methodCallId: MethodCallId = MethodCallId("c1")
       val invocation: Invocation = Invocation(methodName, argument, methodCallId)
       val createdIds: CreatedIds = CreatedIds(Map(
-        ClientId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8")) -> ServerId(Id("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+        ClientId(id) -> ServerId(id)
       ))
       val requestObject: RequestObject = RequestObject(
         using = Seq(Capability("urn:ietf:params:jmap:core"), Capability("urn:ietf:params:jmap:core2")),
