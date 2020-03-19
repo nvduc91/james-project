@@ -33,9 +33,6 @@
 
     <name>Apache James :: Server :: JMAP RFC 8621</name>
 
-    <properties>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${james.groupId}</groupId>
@@ -59,12 +56,11 @@
             <version>0.9.13</version>
         </dependency>
         <dependency>
-            <groupId>be.venneborg</groupId>
-            <artifactId>play27-refined_${scala.base}</artifactId>
-            <version>0.5.0</version>
+            <groupId>de.cbley</groupId>
+            <artifactId>play-json-refined_${scala.base}</artifactId>
+            <version>0.8.0</version>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -74,3 +70,4 @@
         </plugins>
     </build>
 </project>
+

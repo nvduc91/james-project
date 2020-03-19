@@ -115,7 +115,26 @@
     <properties>
         <productName>Apache-James Mail Server</productName>
     </properties>
-
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-cbley-maven</id>
+            <name>bintray</name>
+            <url>https://dl.bintray.com/cbley/maven</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-cbley-maven</id>
+            <name>bintray-plugins</name>
+            <url>https://dl.bintray.com/cbley/maven</url>
+        </pluginRepository>
+    </pluginRepositories>
     <build>
         <pluginManagement>
             <plugins>

@@ -18,20 +18,21 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc
 
-import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
 import org.apache.james.jmap.rfc.model.CreatedIds
-import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
+import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, ServerId}
+import org.apache.james.jmap.rfc.model.CreatedIds.ID
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsSuccess, Json}
+import play.api.libs.json.{JsError, JsString, JsSuccess, Json}
 
 class CreatedIdsTest extends PlaySpec {
-  private val id: Id = Id(Refined.unsafeApply("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+  private val id: ID = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
   "Deserialize ClientId" must {
     "succeed with JsString" in {
       val expectedClientId: ClientId = ClientId(id)
 
-      Json.fromJson[ClientId](Json.toJson[Id](id)) === expectedClientId
+      Json.fromJson[ClientId](Json.toJson[ID](id)) === expectedClientId
     }
   }
 
@@ -48,7 +49,7 @@ class CreatedIdsTest extends PlaySpec {
     "succeed with JsString" in {
       val expectedServerId: ServerId = ServerId(id)
 
-      Json.fromJson[ServerId](Json.toJson[Id](id)) must be (JsSuccess(expectedServerId))
+      Json.fromJson[ServerId](Json.toJson[ID](id)) must be (JsSuccess(expectedServerId))
     }
   }
 
@@ -67,6 +68,11 @@ class CreatedIdsTest extends PlaySpec {
       val mapValue: Map[ClientId, ServerId] = Map(ClientId(id) -> ServerId(id))
       val expectedValue: CreatedIds = CreatedIds(mapValue)
       Json.fromJson[CreatedIds](Json.parse(jsonMapValue)) must be (JsSuccess(expectedValue))
+    }
+
+    "fail for null or empty value" in {
+      Json.fromJson[CreatedIds](JsString("")) mustBe a[JsError]
+      Json.fromJson[CreatedIds](JsString(null)) mustBe a[JsError]
     }
 
     "succeed with an empty Map" in {

@@ -19,8 +19,9 @@
 
 package org.apache.james.jmap.rfc
 
+import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
-import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, Id, ServerId}
+import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, ID, ServerId}
 import org.apache.james.jmap.rfc.model.Invocation.{Arguments, MethodCallId, MethodName}
 import org.apache.james.jmap.rfc.model.RequestObject.Capability
 import org.apache.james.jmap.rfc.model.{CreatedIds, Invocation, RequestObject}
@@ -28,7 +29,7 @@ import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
 class RequestObjectTest extends PlaySpec {
-  private val id: Id = Id(Refined.unsafeApply("aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"))
+  private val id: ID = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
 
   "Deserialize Capability" must {
     "succeed when deserialize from JsString" in {
@@ -65,7 +66,7 @@ class RequestObjectTest extends PlaySpec {
   "Deserialize RequestObject" must {
     "succeed when deserialize from JsString without CreatedIds" in {
       val methodName: MethodName = MethodName("Core/echo")
-      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
       val methodCallId: MethodCallId = MethodCallId("c1")
       val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
 
@@ -88,7 +89,7 @@ class RequestObjectTest extends PlaySpec {
 
     "succeed when deserialize from JsString withCreatedIds" in {
       val methodName: MethodName = MethodName("Core/echo")
-      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
       val methodCallId: MethodCallId = MethodCallId("c1")
       val expectedInvocation: Invocation = Invocation(methodName, argument, methodCallId)
       val expectedCreatedIds: CreatedIds = CreatedIds(Map(
@@ -116,9 +117,9 @@ class RequestObjectTest extends PlaySpec {
 
     "succeed with many Capability, methodCalls without CreatedIds" in {
       val expectedInvocation1: Invocation = Invocation(MethodName("Core/echo"),
-        Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data")), MethodCallId("c1"))
+        Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data")), MethodCallId("c1"))
       val expectedInvocation2: Invocation = Invocation(MethodName("Core/echo2"),
-        Arguments(Json.obj("arg3" -> "arg3data","arg4" -> "arg4data")), MethodCallId("c2"))
+        Arguments(Json.obj("arg3" -> "arg3data", "arg4" -> "arg4data")), MethodCallId("c2"))
 
       RequestObject.deserialize(
         """
@@ -145,7 +146,7 @@ class RequestObjectTest extends PlaySpec {
   "Serialize RequestObject" must {
     "succeed when write to string without CreatedIds" in {
       val methodName: MethodName = MethodName("Core/echo")
-      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
       val methodCallId: MethodCallId = MethodCallId("c1")
       val invocation: Invocation = Invocation(methodName, argument, methodCallId)
 
@@ -170,7 +171,7 @@ class RequestObjectTest extends PlaySpec {
 
     "succeed when write to string with CreatedIds" in {
       val methodName: MethodName = MethodName("Core/echo")
-      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data","arg2" -> "arg2data"))
+      val argument: Arguments = Arguments(Json.obj("arg1" -> "arg1data", "arg2" -> "arg2data"))
       val methodCallId: MethodCallId = MethodCallId("c1")
       val invocation: Invocation = Invocation(methodName, argument, methodCallId)
       val createdIds: CreatedIds = CreatedIds(Map(

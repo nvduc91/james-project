@@ -18,54 +18,41 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc.model
 
-import eu.timepit.refined._
-import eu.timepit.refined.api.Refined
+import eu.timepit.refined.api._
 import eu.timepit.refined.boolean.And
 import eu.timepit.refined.collection.Size
 import eu.timepit.refined.numeric.{Greater, Interval, LessEqual}
 import eu.timepit.refined.string.MatchesRegex
 import org.apache.james.jmap.rfc.model.CreatedIds.{ClientId, ServerId}
-import org.apache.james.jmap.rfc.model.CustomType.ID
 import play.api.libs.json._
+import de.cbley.refined.play.json._
 
 case class CreatedIds(value: Map[ClientId, ServerId])
 
-object CustomType {
-  type ID = String Refined And[
-    Size[Interval.Closed[Greater[W.`0`.T], LessEqual[W.`255`.T]]],
-    MatchesRegex["^[a-zA-Z0-9-_]*$"]]
-}
-
 object CreatedIds {
+  type ID = String Refined And[
+    Size[Interval.Closed[1, 255]],
+    MatchesRegex["^[a-zA-Z0-9-_]*$"]]
 
-  implicit val idTypeFormat = new Format[ID] {
-    override def reads(json: JsValue) = json.validate[String] map[ID]  (s => Refined.unsafeApply(s))
-    override def writes(handle: ID) = JsString(handle.value)
-  }
+  final case class ClientId(value: ID)
 
-    case class Id(value: ID)
+  implicit val clientIdFormat: Format[ClientId] = Json.valueFormat[ClientId]
 
-    implicit val idFormat: Format[Id] = Json.valueFormat[Id]
+  final case class ServerId(value: ID)
 
-    case class ClientId(value: Id) extends AnyVal
+  implicit val serverIdFormat: Format[ServerId] = Json.valueFormat[ServerId]
 
-    implicit val clientIdFormat: Format[ClientId] = Json.valueFormat[ClientId]
+  implicit val createdIdsFormat: Format[CreatedIds] = Json.valueFormat[CreatedIds]
 
-    case class ServerId(value: Id) extends AnyVal
+  implicit def createdIdsIdWrites(implicit serverIdWriter: Writes[ServerId]): Writes[Map[ClientId, ServerId]] =
+    (map: Map[ClientId, ServerId]) => {
+      JsObject(map.map { case (k, v) => (k.value.value, serverIdWriter.writes(v)) }.toSeq)
+    }
 
-    implicit val serverIdFormat: Format[ServerId] = Json.valueFormat[ServerId]
-
-    implicit val createdIdsFormat: Format[CreatedIds] = Json.valueFormat[CreatedIds]
-
-    implicit def createdIdsIdWrites(implicit serverIdWriter: Writes[ServerId]): Writes[Map[ClientId, ServerId]] =
-      (map: Map[ClientId, ServerId]) => {
-        JsObject(map.map { case (k, v) => (k.value.value.value, serverIdWriter.writes(v)) }.toSeq)
-      }
-
-    implicit def createdIdsIdRead(implicit serverIdReader: Reads[ServerId]): Reads[Map[ClientId, ServerId]] =
-      Reads.mapReads[ClientId, ServerId] { str =>
-        Json.fromJson[ClientId](JsString(str))
-      }
-  }
+  implicit def createdIdsIdRead(implicit serverIdReader: Reads[ServerId]): Reads[Map[ClientId, ServerId]] =
+    Reads.mapReads[ClientId, ServerId] { str =>
+      Json.fromJson[ClientId](JsString(str))
+    }
+}
 
 
