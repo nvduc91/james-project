@@ -53,6 +53,16 @@
             <version>${scalatestplus-play.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>eu.timepit</groupId>
+            <artifactId>refined_${scala.base}</artifactId>
+            <version>0.9.13</version>
+        </dependency>
+        <dependency>
+            <groupId>be.venneborg</groupId>
+            <artifactId>play27-refined_${scala.base}</artifactId>
+            <version>0.5.0</version>
+        </dependency>
     </dependencies>
 
     <build>
