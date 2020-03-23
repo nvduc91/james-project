@@ -71,6 +71,15 @@
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-java8-compat_${scala.base}</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-scala-extensions_${scala.base}</artifactId>
+            <version>0.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
