@@ -16,11 +16,23 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  * ***************************************************************/
-package org.apache.james.jmap.rfc.api.method
 
-import org.scalatestplus.play.PlaySpec
+package org.apache.james.jmap.rfc.model
 
-class EchoMethodTest extends PlaySpec {
-  "EchoMethod succeed" must {
+import eu.timepit.refined.types.string.NonEmptyString
+import org.apache.james.jmap.rfc.model.ResponseObject.SessionState
+import play.api.libs.json.{JsResult, Json}
+
+case class ResponseObject(sessionState: SessionState, methodResponses: Seq[Invocation])
+
+object ResponseObject {
+
+  case class SessionState(value: NonEmptyString)
+
+  implicit val sessionStateFormat = Json.valueFormat[SessionState]
+  implicit val responseObjectFormat = Json.format[ResponseObject]
+
+  def deserialize(input: String): JsResult[ResponseObject] = {
+    Json.parse(input).validate[ResponseObject]
   }
 }
