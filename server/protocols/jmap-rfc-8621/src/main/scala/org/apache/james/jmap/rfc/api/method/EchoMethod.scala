@@ -18,33 +18,31 @@
  * ***************************************************************/
 package org.apache.james.jmap.rfc.api.method
 
-import java.io.InputStream
-
+import eu.timepit.refined.auto._
+import org.apache.james.jmap.rfc.api.parser.RequestObjectParser
+import org.apache.james.jmap.rfc.api.routes.{JMAPAPIRoute, MethodName}
 import org.apache.james.jmap.rfc.model.{RequestObject, ResponseObject}
-import org.slf4j.{Logger, LoggerFactory}
+import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
+import reactor.netty.http.server.HttpServerRequest
 
+class EchoMethod extends JMAPAPIRoute[ResponseObject] {
 
-object EchoMethod {
-  private val LOGGER = LoggerFactory.getLogger(EchoMethod.getClass)
-}
+  private val requestObjectParser: RequestObjectParser = new RequestObjectParser()
 
-class EchoMethod {
-  val logger: Logger = EchoMethod.LOGGER
-
-  def toResponseObject(requestObject: RequestObject): Mono[ResponseObject] = {
-    Mono.fromCallable(() => requestObject)
-      .map((requestObject: RequestObject) => {
-        ResponseObject(SessionState("75128aab4b1b"), requestObject.methodCalls)
-      })
+  def toResponseObject(requestObject: RequestObject): ResponseObject = {
+    ResponseObject(ResponseObject.SESSION_STATE, requestObject.methodCalls)
   }
 
-  def toRequestObject(inputStream: InputStream): Mono[RequestObject] = {
-    Mono.fromCallable(() => inputStream)
-      .map((httpContent: HttpContent) => {
-        Json.fromJson[RequestObject](Json.parse(httpContent.content().array()))
+  override var methodName = MethodName("echoMethod")
+
+  override def process(httpServerRequest: HttpServerRequest): Publisher[ResponseObject] = {
+    httpServerRequest
+      .receive()
+      .asInputStream()
+      .flatMap(requestObjectParser.toRequestObject)
+      .flatMap((requestObject: RequestObject) => {
+        return Mono.just(new ResponseObject(ResponseObject.SESSION_STATE, requestObject.methodCalls))
       })
-      .filter((jsResult: JsResult[RequestObject]) => jsResult.isSuccess)
-      .map((jsResult: JsResult[RequestObject]) => jsResult.get)
   }
 }
