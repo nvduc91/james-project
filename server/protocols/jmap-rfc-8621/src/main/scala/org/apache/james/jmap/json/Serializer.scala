@@ -19,6 +19,7 @@
 
 package org.apache.james.jmap.json
 
+import java.io.InputStream
 import java.net.URL
 
 import org.apache.james.core.Username
@@ -29,6 +30,7 @@ import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodNa
 import org.apache.james.jmap.model.{Account, Invocation, Session, _}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
 
 class Serializer {
   // CreateIds
@@ -130,6 +132,10 @@ class Serializer {
 
   def deserializeRequestObject(input: String): JsResult[RequestObject] = {
     Json.parse(input).validate[RequestObject]
+  }
+
+  def deserializeRequestObject(inputStream: InputStream): JsResult[RequestObject] = {
+    Json.parse(inputStream).validate[RequestObject]
   }
 
   def deserializeResponseObject(input: String): JsResult[ResponseObject] = {

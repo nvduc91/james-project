@@ -19,7 +19,6 @@
 
 package org.apache.james.jmap.json
 
-import eu.timepit.refined.auto._
 import org.apache.james.jmap.json.Fixture._
 import org.apache.james.jmap.model.ResponseObject
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +29,7 @@ class ResponseObjectSerializationTest extends AnyWordSpec with Matchers {
   "Deserialize ResponseObject" should {
     "succeed " in {
       val expectedResponseObject = ResponseObject(
-        sessionState = "75128aab4b1b",
+        sessionState = ResponseObject.SESSION_STATE,
         methodResponses = Seq(invocation1))
 
       new Serializer().deserializeResponseObject(
@@ -49,7 +48,7 @@ class ResponseObjectSerializationTest extends AnyWordSpec with Matchers {
 
     "succeed with many Capability, methodCalls" in {
       val expectedResponseObject = ResponseObject(
-        sessionState = "75128aab4b1b",
+        sessionState = ResponseObject.SESSION_STATE,
         methodResponses = Seq(invocation1, invocation2))
 
       new Serializer().deserializeResponseObject(
@@ -74,7 +73,7 @@ class ResponseObjectSerializationTest extends AnyWordSpec with Matchers {
   "Serialize ResponseObject" should {
     "succeed " in {
       val responseObject: ResponseObject = ResponseObject(
-        sessionState = "75128aab4b1b",
+        sessionState = ResponseObject.SESSION_STATE,
         methodResponses = Seq(invocation1))
 
       val expectedJson = Json.prettyPrint(Json.parse(
