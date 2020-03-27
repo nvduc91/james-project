@@ -20,5 +20,10 @@
 package org.apache.james.jmap.model
 
 import org.apache.james.jmap.model.State.State
+import eu.timepit.refined.auto._
 
 case class ResponseObject(sessionState: State, methodResponses: Seq[Invocation])
+
+object ResponseObject {
+  val SESSION_STATE: State = "75128aab4b1b"
+}

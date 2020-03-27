@@ -16,11 +16,15 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  * ***************************************************************/
-package org.apache.james.jmap.rfc.api.method
+package org.apache.james.jmap.routes
 
-import org.scalatestplus.play.PlaySpec
+import org.apache.james.jmap.model.Invocation
+import org.apache.james.jmap.model.Invocation.MethodName
+import org.reactivestreams.Publisher
 
-class EchoMethodTest extends PlaySpec {
-  "EchoMethod succeed" must {
-  }
+trait JMAPAPIRoute[T] {
+  val methodName: MethodName
+
+  def process(invocation: Invocation): Publisher[T]
 }
+

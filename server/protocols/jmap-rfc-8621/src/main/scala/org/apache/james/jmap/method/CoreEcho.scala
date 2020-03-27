@@ -16,23 +16,17 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  * ***************************************************************/
+package org.apache.james.jmap.method
 
-package org.apache.james.jmap.rfc.model
+import eu.timepit.refined.auto._
+import org.apache.james.jmap.model.Invocation
+import org.apache.james.jmap.model.Invocation.MethodName
+import org.apache.james.jmap.routes.JMAPAPIRoute
+import org.reactivestreams.Publisher
+import reactor.core.scala.publisher.SMono
 
-import eu.timepit.refined.types.string.NonEmptyString
-import org.apache.james.jmap.rfc.model.ResponseObject.SessionState
-import play.api.libs.json.{JsResult, Json}
+class CoreEcho extends JMAPAPIRoute[Invocation] {
+  override val methodName = MethodName("core/echo")
 
-case class ResponseObject(sessionState: SessionState, methodResponses: Seq[Invocation])
-
-object ResponseObject {
-
-  case class SessionState(value: NonEmptyString)
-
-  implicit val sessionStateFormat = Json.valueFormat[SessionState]
-  implicit val responseObjectFormat = Json.format[ResponseObject]
-
-  def deserialize(input: String): JsResult[ResponseObject] = {
-    Json.parse(input).validate[ResponseObject]
-  }
+  override def process(invocation: Invocation): Publisher[Invocation] = SMono.just(invocation)
 }
