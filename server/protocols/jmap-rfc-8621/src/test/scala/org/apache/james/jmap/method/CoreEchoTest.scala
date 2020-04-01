@@ -18,76 +18,29 @@
  * ***************************************************************/
 package org.apache.james.jmap.method
 
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
-
-import org.apache.james.jmap.json.Fixture.invocation1
-import org.apache.james.jmap.model.ResponseObject
-import org.mockito.Mockito._
+import org.apache.james.jmap.json.Fixture.{invocation1, invocation2}
+import org.apache.james.jmap.model.Invocation
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import reactor.core.publisher.Flux
 import reactor.core.scala.publisher.SMono
-import reactor.netty.ByteBufFlux
-import reactor.netty.http.server.HttpServerRequest
 
 class CoreEchoTest extends AnyWordSpec with Matchers {
   private val echoMethod: CoreEcho = new CoreEcho()
 
-  private val REQUEST_OBJECT: String =
-    """
-      |{
-      |  "using": [ "urn:ietf:params:jmap:core"],
-      |  "methodCalls": [
-      |    [ "Core/echo1", {
-      |      "arg1": "arg1data",
-      |      "arg2": "arg2data"
-      |    }, "c1" ]
-      |  ]
-      |}
-      |""".stripMargin
-
-  private val REQUEST_OBJECT_MISSING_FILED: String =
-    """
-      |{
-      |  "using": [ "urn:ietf:params:jmap:core"]
-      |}
-      |""".stripMargin
-
-  private val RESPONSE_OBJECT: ResponseObject = ResponseObject(
-    sessionState = ResponseObject.SESSION_STATE,
-    methodResponses = Seq(invocation1))
-
-  private val INVALID_REQUEST_OBJECT: String =
-    """
-      |{
-      |  "field1": [ "just example"],
-      |  "field2": ["value of field"]
-      |}
-      |""".stripMargin
-
   "CoreEcho" should {
     "Process" should {
-      "should success and return ResponseObject with valid RequestObject" in {
-        val inputStreamData: Flux[InputStream] = ByteBufFlux.fromString(SMono.just(REQUEST_OBJECT)).asInputStream()
-        val expectedResponse: ResponseObject = RESPONSE_OBJECT
+      "success and return the same with parameters as the invocation request" in {
+        val expectedResponse: Invocation = invocation1
+        val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
 
-        val dataResponse = SMono.fromPublisher(echoMethod.process(inputStreamData)).block()
-        dataResponse shouldEqual expectedResponse
+        dataResponse shouldBe expectedResponse
       }
 
-      "should error and return error with valid RequestObject but missing required field" in {
-        val inputStreamData: Flux[InputStream] = ByteBufFlux.fromString(SMono.just(REQUEST_OBJECT_MISSING_FILED)).asInputStream()
-        assertThrows[RuntimeException]{
-          SMono.fromPublisher(echoMethod.process(inputStreamData)).block()
-        }
-      }
-
-      "should error and return error with invalid RequestObject" in {
-        val inputStreamData: Flux[InputStream] = ByteBufFlux.fromString(SMono.just(INVALID_REQUEST_OBJECT)).asInputStream()
-        assertThrows[RuntimeException]{
-          SMono.fromPublisher(echoMethod.process(inputStreamData)).block()
-        }
+      "success and not return anything else different than the original invocation" in {
+        val wrongExpected: Invocation = invocation2
+        val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
+        
+        dataResponse should not be(wrongExpected)
       }
     }
   }
