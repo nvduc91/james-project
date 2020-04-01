@@ -31,6 +31,7 @@ class CoreEchoTest extends AnyWordSpec with Matchers {
       "success and return the same with parameters as the invocation request" in {
         val expectedResponse: Invocation = invocation1
         val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
+<<<<<<< 01f66738f0bfb311427faa340180ddd441afdca1
 
         dataResponse shouldBe expectedResponse
       }
@@ -39,6 +40,16 @@ class CoreEchoTest extends AnyWordSpec with Matchers {
         val wrongExpected: Invocation = invocation2
         val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
 
+=======
+
+        dataResponse shouldBe expectedResponse
+      }
+
+      "success and not return anything else different than the original invocation" in {
+        val wrongExpected: Invocation = invocation2
+        val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
+        
+>>>>>>> JAMES-2888: Remove JMAPRoutes, correct CoreEcho method and test, ordering pom, remove unused [no review] commit.
         dataResponse should not be(wrongExpected)
       }
     }
