@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.apache.james.backends.cassandra.versions.CassandraSchemaVersionDAO;
 import org.apache.james.backends.cassandra.versions.CassandraSchemaVersionManager;
 import org.apache.james.backends.cassandra.versions.SchemaVersion;
 import org.apache.james.core.Domain;
@@ -43,15 +42,15 @@ public class CassandraRecipientRewriteTable extends AbstractRecipientRewriteTabl
 
     private final CassandraRecipientRewriteTableDAO cassandraRecipientRewriteTableDAO;
     private final CassandraMappingsSourcesDAO cassandraMappingsSourcesDAO;
-    private final CassandraSchemaVersionDAO cassandraSchemaVersionDAO;
+    private final CassandraSchemaVersionManager versionManager;
 
     @Inject
-    public CassandraRecipientRewriteTable(CassandraRecipientRewriteTableDAO cassandraRecipientRewriteTableDAO,
-                                          CassandraMappingsSourcesDAO cassandraMappingsSourcesDAO,
-                                          CassandraSchemaVersionDAO cassandraSchemaVersionDAO) {
+    CassandraRecipientRewriteTable(CassandraRecipientRewriteTableDAO cassandraRecipientRewriteTableDAO,
+                                   CassandraMappingsSourcesDAO cassandraMappingsSourcesDAO,
+                                   CassandraSchemaVersionManager versionManager) {
         this.cassandraRecipientRewriteTableDAO = cassandraRecipientRewriteTableDAO;
         this.cassandraMappingsSourcesDAO = cassandraMappingsSourcesDAO;
-        this.cassandraSchemaVersionDAO = cassandraSchemaVersionDAO;
+        this.versionManager = versionManager;
     }
 
     @Override
@@ -98,11 +97,7 @@ public class CassandraRecipientRewriteTable extends AbstractRecipientRewriteTabl
         Preconditions.checkArgument(listSourcesSupportedType.contains(mapping.getType()),
             "Not supported mapping of type %s", mapping.getType());
 
-        SchemaVersion schemaVersion = cassandraSchemaVersionDAO.getCurrentSchemaVersion()
-            .block()
-            .orElse(CassandraSchemaVersionManager.MIN_VERSION);
-
-        if (schemaVersion.isBefore(MAPPINGS_SOURCES_SUPPORTED_VERSION)) {
+        if (versionManager.isBefore(MAPPINGS_SOURCES_SUPPORTED_VERSION)) {
             return super.listSources(mapping);
         }
 

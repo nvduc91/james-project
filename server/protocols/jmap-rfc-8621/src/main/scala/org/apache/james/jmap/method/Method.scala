@@ -16,15 +16,14 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  * ***************************************************************/
-package org.apache.james.jmap.routes
+package org.apache.james.jmap.method
 
 import org.apache.james.jmap.model.Invocation
 import org.apache.james.jmap.model.Invocation.MethodName
-import org.reactivestreams.Publisher
 
-trait JMAPAPIRoute[T] {
+trait Method {
   val methodName: MethodName
 
-  def process(invocation: Invocation): Publisher[T]
+  def process(invocation: Invocation): LazyList[Invocation]
 }
 

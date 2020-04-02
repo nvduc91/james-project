@@ -19,7 +19,8 @@
 
 package org.apache.james.jmap.draft.methods;
 
-import java.util.stream.Stream;
+import static org.apache.james.jmap.http.LoggingHelper.jmapAction;
+import static org.apache.james.util.ReactorUtils.context;
 
 import javax.inject.Inject;
 
@@ -37,6 +38,9 @@ import org.apache.james.metrics.api.MetricFactory;
 import org.apache.james.util.MDCBuilder;
 
 import com.google.common.base.Preconditions;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public class SetVacationResponseMethod implements Method {
 
@@ -69,26 +73,22 @@ public class SetVacationResponseMethod implements Method {
     }
 
     @Override
-    public Stream<JmapResponse> process(JmapRequest request, MethodCallId methodCallId, MailboxSession mailboxSession) {
+    public Flux<JmapResponse> process(JmapRequest request, MethodCallId methodCallId, MailboxSession mailboxSession) {
         Preconditions.checkNotNull(request);
         Preconditions.checkNotNull(methodCallId);
         Preconditions.checkNotNull(mailboxSession);
         Preconditions.checkArgument(request instanceof SetVacationRequest);
         SetVacationRequest setVacationRequest = (SetVacationRequest) request;
 
-
-        return MDCBuilder.create()
-            .addContext(MDCBuilder.ACTION, "SET_VACATION")
-            .addContext("update", setVacationRequest.getUpdate())
-            .wrapArround(
-                () -> metricFactory.runPublishingTimerMetricLogP99(JMAP_PREFIX + METHOD_NAME.getName(),
-                    () -> process(methodCallId, mailboxSession, setVacationRequest)))
-            .get();
+        return metricFactory.runPublishingTimerMetricLogP99(JMAP_PREFIX + METHOD_NAME.getName(),
+            () -> process(methodCallId, mailboxSession, setVacationRequest)
+                .subscriberContext(jmapAction("SET_VACATION"))
+                .subscriberContext(context("set-vacation", MDCBuilder.of("update", setVacationRequest.getUpdate()))));
     }
 
-    private Stream<JmapResponse> process(MethodCallId methodCallId, MailboxSession mailboxSession, SetVacationRequest setVacationRequest) {
+    private Flux<JmapResponse> process(MethodCallId methodCallId, MailboxSession mailboxSession, SetVacationRequest setVacationRequest) {
         if (!setVacationRequest.isValid()) {
-            return Stream.of(JmapResponse
+            return Flux.just(JmapResponse
                 .builder()
                 .methodCallId(methodCallId)
                 .error(ErrorResponse.builder()
@@ -104,19 +104,19 @@ public class SetVacationResponseMethod implements Method {
     }
 
 
-    private Stream<JmapResponse> process(MethodCallId methodCallId, AccountId accountId, VacationResponse vacationResponse) {
+    private Flux<JmapResponse> process(MethodCallId methodCallId, AccountId accountId, VacationResponse vacationResponse) {
         if (vacationResponse.isValid()) {
-            vacationRepository.modifyVacation(accountId, vacationResponse.getPatch()).block();
-            notificationRegistry.flush(accountId).block();
-            return Stream.of(JmapResponse.builder()
-                .methodCallId(methodCallId)
-                .responseName(RESPONSE_NAME)
-                .response(SetVacationResponse.builder()
-                    .updatedId(Vacation.ID)
-                    .build())
-                .build());
+            return vacationRepository.modifyVacation(accountId, vacationResponse.getPatch())
+                .then(notificationRegistry.flush(accountId))
+                .thenMany(Mono.just(JmapResponse.builder()
+                    .methodCallId(methodCallId)
+                    .responseName(RESPONSE_NAME)
+                    .response(SetVacationResponse.builder()
+                        .updatedId(Vacation.ID)
+                        .build())
+                    .build()));
         } else {
-            return Stream.of(JmapResponse.builder()
+            return Flux.just(JmapResponse.builder()
                 .methodCallId(methodCallId)
                 .responseName(RESPONSE_NAME)
                 .response(SetVacationResponse.builder()
