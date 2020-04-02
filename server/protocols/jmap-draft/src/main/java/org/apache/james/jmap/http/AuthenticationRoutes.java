@@ -28,7 +28,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static org.apache.james.jmap.HttpConstants.JSON_CONTENT_TYPE;
 import static org.apache.james.jmap.HttpConstants.JSON_CONTENT_TYPE_UTF8;
-import static org.apache.james.jmap.http.JMAPUrls.AUTHENTICATION;
+import static org.apache.james.jmap.JMAPUrls.AUTHENTICATION;
 import static org.apache.james.jmap.http.LoggingHelper.jmapAction;
 import static org.apache.james.jmap.http.LoggingHelper.jmapAuthContext;
 import static org.apache.james.jmap.http.LoggingHelper.jmapContext;
@@ -37,11 +37,15 @@ import static org.apache.james.util.ReactorUtils.logOnError;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
 import org.apache.james.core.Username;
+import org.apache.james.jmap.Endpoint;
+import org.apache.james.jmap.JMAPRoute;
 import org.apache.james.jmap.JMAPRoutes;
+import org.apache.james.jmap.JMAPUrls;
 import org.apache.james.jmap.api.access.AccessToken;
 import org.apache.james.jmap.draft.api.AccessTokenManager;
 import org.apache.james.jmap.draft.api.SimpleTokenFactory;
@@ -64,11 +68,11 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.netty.handler.codec.http.HttpMethod;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import reactor.netty.http.server.HttpServerRoutes;
 
 public class AuthenticationRoutes implements JMAPRoutes {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationRoutes.class);
@@ -101,12 +105,25 @@ public class AuthenticationRoutes implements JMAPRoutes {
     }
 
     @Override
-    public HttpServerRoutes define(HttpServerRoutes builder) {
-        return builder
-            .post(AUTHENTICATION, JMAPRoutes.corsHeaders(this::post))
-            .get(AUTHENTICATION, JMAPRoutes.corsHeaders(this::returnEndPointsResponse))
-            .delete(AUTHENTICATION, JMAPRoutes.corsHeaders(this::delete))
-            .options(AUTHENTICATION, CORS_CONTROL);
+    public Stream<JMAPRoute> routes() {
+        return Stream.of(
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.POST, AUTHENTICATION))
+                .action(this::post)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.GET, AUTHENTICATION))
+                .action(this::returnEndPointsResponse)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.DELETE, AUTHENTICATION))
+                .action(this::delete)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.OPTIONS, AUTHENTICATION))
+                .action(CORS_CONTROL)
+                .noCorsHeaders()
+        );
     }
 
     private Mono<Void> post(HttpServerRequest request, HttpServerResponse response) {

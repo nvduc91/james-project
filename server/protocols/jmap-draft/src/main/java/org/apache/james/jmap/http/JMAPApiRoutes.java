@@ -21,15 +21,18 @@ package org.apache.james.jmap.http;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.apache.james.jmap.HttpConstants.JSON_CONTENT_TYPE;
-import static org.apache.james.jmap.http.JMAPUrls.JMAP;
+import static org.apache.james.jmap.JMAPUrls.JMAP;
 import static org.apache.james.jmap.http.LoggingHelper.jmapAuthContext;
 import static org.apache.james.jmap.http.LoggingHelper.jmapContext;
 import static org.apache.james.util.ReactorUtils.logOnError;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.james.jmap.Endpoint;
+import org.apache.james.jmap.JMAPRoute;
 import org.apache.james.jmap.JMAPRoutes;
 import org.apache.james.jmap.draft.exceptions.BadRequestException;
 import org.apache.james.jmap.draft.exceptions.InternalErrorException;
@@ -48,12 +51,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.netty.handler.codec.http.HttpMethod;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import reactor.netty.http.server.HttpServerRoutes;
 
 public class JMAPApiRoutes implements JMAPRoutes {
     public static final Logger LOGGER = LoggerFactory.getLogger(JMAPApiRoutes.class);
@@ -82,9 +85,17 @@ public class JMAPApiRoutes implements JMAPRoutes {
     }
 
     @Override
-    public HttpServerRoutes define(HttpServerRoutes builder) {
-        return builder.post(JMAP, JMAPRoutes.corsHeaders(this::post))
-            .options(JMAP, CORS_CONTROL);
+    public Stream<JMAPRoute> routes() {
+        return Stream.of(
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.POST, JMAP))
+                .action(this::post)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.OPTIONS, JMAP))
+                .action(CORS_CONTROL)
+                .noCorsHeaders()
+        );
     }
 
     private Mono<Void> post(HttpServerRequest request, HttpServerResponse response) {

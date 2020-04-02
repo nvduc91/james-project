@@ -23,7 +23,7 @@ import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.Id.Id
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodName}
-import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, ServerId}
+import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, ResponseObject, ServerId}
 import play.api.libs.json.Json
 
 object Fixture {
@@ -40,4 +40,11 @@ object Fixture {
     arguments = Arguments(Json.obj("arg3" -> "arg3data", "arg4" -> "arg4data")),
     methodCallId = MethodCallId("c2")
   )
+  val unsupportedInvocation: Invocation = Invocation(
+    methodName = MethodName("error"),
+    arguments = Arguments(Json.obj("type" -> "Not implemented")),
+    methodCallId = MethodCallId("notsupport"))
+  val responseObject1: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1))
+  val responseObject2: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation2))
+  val responseObjectWithUnsupportedMethod: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1, unsupportedInvocation))
 }
