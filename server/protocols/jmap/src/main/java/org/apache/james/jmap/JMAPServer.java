@@ -19,6 +19,9 @@
 
 package org.apache.james.jmap;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,18 +34,19 @@ import org.slf4j.LoggerFactory;
 
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.netty.http.server.HttpServerRequest;
 
 public class JMAPServer implements Startable {
     private static final int RANDOM_PORT = 0;
 
     private final JMAPConfiguration configuration;
-    private final Set<JMAPRoutes> jmapRoutes;
+    private final Set<JMAPRoutesHandler> jmapRoutesHandlers;
     private Optional<DisposableServer> server;
 
     @Inject
-    public JMAPServer(JMAPConfiguration configuration, Set<JMAPRoutes> jmapRoutes) {
+    public JMAPServer(JMAPConfiguration configuration, Set<JMAPRoutesHandler> jmapRoutesHandlers) {
         this.configuration = configuration;
-        this.jmapRoutes = jmapRoutes;
+        this.jmapRoutesHandlers = jmapRoutesHandlers;
         this.server = Optional.empty();
     }
 
@@ -58,7 +62,7 @@ public class JMAPServer implements Startable {
                 .port(configuration.getPort()
                     .map(Port::getValue)
                     .orElse(RANDOM_PORT))
-                .route(routes -> jmapRoutes.forEach(jmapRoute -> jmapRoute.define(routes)))
+                .handle((request, response) -> handleVersionRoute(request).handleRequest(request, response))
                 .wiretap(wireTapEnabled())
                 .bindNow());
         }
@@ -66,6 +70,19 @@ public class JMAPServer implements Startable {
 
     private boolean wireTapEnabled() {
         return LoggerFactory.getLogger("org.apache.james.jmap.wire").isTraceEnabled();
+    }
+
+    private JMAPRoute.Action handleVersionRoute(HttpServerRequest request) {
+        try {
+            return jmapRoutesHandlers.stream()
+                .flatMap(jmapRoutesHandler -> jmapRoutesHandler.routes(request))
+                .filter(jmapRoute -> jmapRoute.matches(request))
+                .map(JMAPRoute::getAction)
+                .findFirst()
+                .orElse((req, res) -> res.status(NOT_FOUND).send());
+        } catch (IllegalArgumentException e) {
+            return (req, res) -> res.status(BAD_REQUEST).send();
+        }
     }
 
     @PreDestroy

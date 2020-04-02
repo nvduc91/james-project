@@ -21,7 +21,7 @@ package org.apache.james.jmap.http;
 import static io.restassured.RestAssured.given;
 import static io.restassured.config.EncoderConfig.encoderConfig;
 import static io.restassured.config.RestAssuredConfig.newConfig;
-import static org.apache.james.jmap.http.JMAPUrls.JMAP;
+import static org.apache.james.jmap.JMAPUrls.JMAP;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -30,7 +30,15 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+<<<<<<< HEAD
 import org.apache.james.core.Username;
+=======
+<<<<<<< HEAD
+import org.apache.james.jmap.JMAPRoute;
+=======
+import org.apache.james.core.Username;
+>>>>>>> f08f82f... JAMES-3078 MDC hierarchical MDC context for reactor
+>>>>>>> 2d943624f6bd4ba479d9ee0305f8922548b51fa3
 import org.apache.james.jmap.draft.methods.ErrorResponse;
 import org.apache.james.jmap.draft.methods.Method;
 import org.apache.james.jmap.draft.methods.RequestHandler;
@@ -46,6 +54,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.netty.handler.codec.http.HttpMethod;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
@@ -73,9 +82,14 @@ public class JMAPApiRoutesTest {
         JMAPApiRoutes jmapApiRoutes = new JMAPApiRoutes(requestHandler, new RecordingMetricFactory(),
             mockedAuthFilter, mockedUserProvisionner, mockedMailboxesProvisionner);
 
+        JMAPRoute postApiRoute = jmapApiRoutes.routes()
+            .filter(jmapRoute -> jmapRoute.getEndpoint().getMethod().equals(HttpMethod.POST))
+            .findFirst()
+            .get();
+
         server = HttpServer.create()
             .port(RANDOM_PORT)
-            .route(jmapApiRoutes::define)
+            .route(routes -> routes.post(postApiRoute.getEndpoint().getPath(), (req, res) -> postApiRoute.getAction().handleRequest(req, res)))
             .bindNow();
 
         RestAssured.requestSpecification = new RequestSpecBuilder()

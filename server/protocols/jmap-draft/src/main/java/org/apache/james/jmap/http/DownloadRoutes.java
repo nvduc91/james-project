@@ -22,7 +22,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.apache.james.jmap.HttpConstants.TEXT_PLAIN_CONTENT_TYPE;
-import static org.apache.james.jmap.http.JMAPUrls.DOWNLOAD;
+import static org.apache.james.jmap.JMAPUrls.DOWNLOAD;
 import static org.apache.james.jmap.http.LoggingHelper.jmapAction;
 import static org.apache.james.jmap.http.LoggingHelper.jmapAuthContext;
 import static org.apache.james.jmap.http.LoggingHelper.jmapContext;
@@ -33,9 +33,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.james.jmap.Endpoint;
+import org.apache.james.jmap.JMAPRoute;
 import org.apache.james.jmap.JMAPRoutes;
 import org.apache.james.jmap.draft.api.SimpleTokenFactory;
 import org.apache.james.jmap.draft.exceptions.BadRequestException;
@@ -61,11 +64,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
 
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpMethod;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import reactor.netty.http.server.HttpServerRoutes;
 
 public class DownloadRoutes implements JMAPRoutes {
     private static final Logger LOGGER = LoggerFactory.getLogger(DownloadRoutes.class);
@@ -95,13 +98,33 @@ public class DownloadRoutes implements JMAPRoutes {
     }
 
     @Override
-    public HttpServerRoutes define(HttpServerRoutes builder) {
-        return builder.post(DOWNLOAD_FROM_ID, JMAPRoutes.corsHeaders(this::postFromId))
-            .get(DOWNLOAD_FROM_ID, JMAPRoutes.corsHeaders(this::getFromId))
-            .post(DOWNLOAD_FROM_ID_AND_NAME, JMAPRoutes.corsHeaders(this::postFromIdAndName))
-            .get(DOWNLOAD_FROM_ID_AND_NAME, JMAPRoutes.corsHeaders(this::getFromIdAndName))
-            .options(DOWNLOAD_FROM_ID, CORS_CONTROL)
-            .options(DOWNLOAD_FROM_ID_AND_NAME, CORS_CONTROL);
+    public Stream<JMAPRoute> routes() {
+        return Stream.of(
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.POST, DOWNLOAD_FROM_ID))
+                .action(this::postFromId)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.GET, DOWNLOAD_FROM_ID))
+                .action(this::getFromId)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.POST, DOWNLOAD_FROM_ID_AND_NAME))
+                .action(this::postFromIdAndName)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.GET, DOWNLOAD_FROM_ID_AND_NAME))
+                .action(this::getFromIdAndName)
+                .corsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.OPTIONS, DOWNLOAD_FROM_ID))
+                .action(CORS_CONTROL)
+                .noCorsHeaders(),
+            JMAPRoute.builder()
+                .endpoint(new Endpoint(HttpMethod.OPTIONS, DOWNLOAD_FROM_ID_AND_NAME))
+                .action(CORS_CONTROL)
+                .noCorsHeaders()
+        );
     }
 
     private Mono<Void> postFromId(HttpServerRequest request, HttpServerResponse response) {

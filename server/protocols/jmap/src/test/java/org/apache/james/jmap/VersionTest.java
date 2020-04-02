@@ -17,12 +17,40 @@
  * under the License.                                           *
  ****************************************************************/
 
-package org.apache.james.jmap.http;
+package org.apache.james.jmap;
 
-public interface JMAPUrls {
-    String JMAP = "/jmap";
-    String AUTHENTICATION = "/authentication";
-    String DOWNLOAD = "/download";
-    String UPLOAD = "/upload";
-    String NOT_IMPLEMENTED = "/notImplemented";
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.Test;
+
+class VersionTest {
+    @Test
+    void ofShouldReturnCorrectValue() {
+        String version = "rfc-8621";
+
+        assertThat(Version.of(version)).isEqualTo(Version.RFC8621);
+    }
+
+    @Test
+    void ofShouldThrowWhenVersionNotKnown() {
+        String version = "unknown";
+
+        assertThatThrownBy(() -> Version.of(version))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void ofShouldThrowWhenVersionIsNull() {
+        assertThatThrownBy(() -> Version.of(null))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void ofShouldThrowWhenVersionIsEmpty() {
+        String version = "";
+
+        assertThatThrownBy(() -> Version.of(version))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
 }

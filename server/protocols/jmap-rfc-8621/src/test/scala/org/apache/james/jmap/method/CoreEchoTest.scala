@@ -22,7 +22,6 @@ import org.apache.james.jmap.json.Fixture.{invocation1, invocation2}
 import org.apache.james.jmap.model.Invocation
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import reactor.core.scala.publisher.SMono
 
 class CoreEchoTest extends AnyWordSpec with Matchers {
   private val echoMethod: CoreEcho = new CoreEcho()
@@ -31,15 +30,15 @@ class CoreEchoTest extends AnyWordSpec with Matchers {
     "Process" should {
       "success and return the same with parameters as the invocation request" in {
         val expectedResponse: Invocation = invocation1
-        val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
+        val dataResponse = echoMethod.process(invocation1).toList.head
 
         dataResponse shouldBe expectedResponse
       }
 
       "success and not return anything else different than the original invocation" in {
         val wrongExpected: Invocation = invocation2
-        val dataResponse = SMono.fromPublisher(echoMethod.process(invocation1)).block()
-        
+        val dataResponse = echoMethod.process(invocation1).toList.head
+
         dataResponse should not be(wrongExpected)
       }
     }
