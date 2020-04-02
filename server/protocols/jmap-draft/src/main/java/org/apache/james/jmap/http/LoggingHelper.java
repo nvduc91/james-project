@@ -17,14 +17,30 @@
  * under the License.                                           *
  ****************************************************************/
 
-package org.apache.james.jmap.draft.methods;
+package org.apache.james.jmap.http;
 
-import org.apache.james.jmap.draft.model.InvocationResponse;
+import static org.apache.james.util.ReactorUtils.context;
 
-import reactor.core.publisher.Flux;
+import org.apache.james.mailbox.MailboxSession;
+import org.apache.james.util.MDCBuilder;
 
-public interface JmapResponseWriter {
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.util.context.Context;
 
-    Flux<InvocationResponse> formatMethodResponse(Flux<JmapResponse> jmapResponse);
+public interface LoggingHelper {
+    static Context jmapAuthContext(MailboxSession session) {
+        return context("JMAP_AUTH",
+            MDCBuilder.of(MDCBuilder.USER, session.getUser().asString()));
+    }
 
+    static Context jmapContext(HttpServerRequest req) {
+        return context("JMAP", MDCBuilder.create()
+            .addContext(MDCBuilder.PROTOCOL, "JMAP")
+            .addContext(MDCBuilder.IP, req.hostAddress().getHostString()));
+    }
+
+    static Context jmapAction(String action) {
+        return context("JMAP_ACTION",
+            MDCBuilder.of(MDCBuilder.ACTION, action));
+    }
 }

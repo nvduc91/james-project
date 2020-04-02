@@ -17,14 +17,22 @@
  * under the License.                                           *
  ****************************************************************/
 
-package org.apache.james.jmap.draft.methods;
+package org.apache.james.modules.mailbox;
 
-import org.apache.james.jmap.draft.model.InvocationResponse;
+import java.time.Duration;
 
-import reactor.core.publisher.Flux;
+import org.apache.james.mailbox.events.RetryBackoffConfiguration;
 
-public interface JmapResponseWriter {
+import com.google.inject.AbstractModule;
 
-    Flux<InvocationResponse> formatMethodResponse(Flux<JmapResponse> jmapResponse);
-
+public class FastRetryBackoffModule extends AbstractModule {
+    @Override
+    protected void configure() {
+        bind(RetryBackoffConfiguration.class)
+            .toInstance(RetryBackoffConfiguration.builder()
+                .maxRetries(3)
+                .firstBackoff(Duration.ofMillis(10))
+                .jitterFactor(0.2)
+                .build());
+    }
 }

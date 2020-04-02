@@ -135,7 +135,7 @@ abstract class AbstractSelectionProcessor<R extends AbstractMailboxSelectionRequ
         while (unseen(responder, firstUnseen, selected) == false) {
             // if we not was able to get find the unseen within 5 retries we should just not send it
             if (retryCount == 5) {
-                LOGGER.info("Unable to uid for unseen message {} in mailbox {}", firstUnseen, selected.getPath());
+                LOGGER.info("Unable to uid for unseen message {} in mailbox {}", firstUnseen, selected.getMailboxId().serialize());
                 break;
             }
             firstUnseen = selectMailbox(fullMailboxPath, session).getFirstUnseen();
@@ -352,7 +352,7 @@ abstract class AbstractSelectionProcessor<R extends AbstractMailboxSelectionRequ
             int msn = selected.msn(unseenUid);
 
             if (msn == SelectedMailbox.NO_SUCH_MESSAGE) {
-                LOGGER.debug("No message found with uid {} in mailbox {}", unseenUid, selected.getPath().asString());
+                LOGGER.debug("No message found with uid {} in mailbox {}", unseenUid, selected.getMailboxId().serialize());
                 return false;
             } 
 
@@ -399,7 +399,7 @@ abstract class AbstractSelectionProcessor<R extends AbstractMailboxSelectionRequ
             if (currentMailbox != null) {
                 getStatusResponseFactory().untaggedOk(HumanReadableText.QRESYNC_CLOSED, ResponseCode.closed());
             }
-            session.selected(new SelectedMailboxImpl(getMailboxManager(), eventBus, session, mailboxPath));
+            session.selected(new SelectedMailboxImpl(getMailboxManager(), eventBus, session, mailbox));
 
             sessionMailbox = session.getSelected();
             

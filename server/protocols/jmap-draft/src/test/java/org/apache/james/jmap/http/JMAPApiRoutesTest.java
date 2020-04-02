@@ -24,18 +24,19 @@ import static io.restassured.config.RestAssuredConfig.newConfig;
 import static org.apache.james.jmap.http.JMAPUrls.JMAP;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Stream;
 
+import org.apache.james.core.Username;
 import org.apache.james.jmap.draft.methods.ErrorResponse;
 import org.apache.james.jmap.draft.methods.Method;
 import org.apache.james.jmap.draft.methods.RequestHandler;
 import org.apache.james.jmap.draft.model.InvocationResponse;
 import org.apache.james.jmap.draft.model.MethodCallId;
-import org.apache.james.mailbox.MailboxSession;
+import org.apache.james.mailbox.MailboxSessionUtil;
 import org.apache.james.metrics.tests.RecordingMetricFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -48,6 +49,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
@@ -84,8 +86,8 @@ public class JMAPApiRoutesTest {
             .setBasePath(JMAP)
             .build();
 
-        when(mockedAuthFilter.authenticate(any()))
-            .thenReturn(Mono.just(mock(MailboxSession.class)));
+        doReturn(Mono.just(MailboxSessionUtil.create(Username.of("bob"))))
+            .when(mockedAuthFilter).authenticate(any());
         when(mockedUserProvisionner.provisionUser(any()))
             .thenReturn(Mono.empty());
         when(mockedMailboxesProvisionner.createMailboxesIfNeeded(any()))
@@ -115,7 +117,7 @@ public class JMAPApiRoutesTest {
         json.put("type", "invalidArgument");
 
         when(requestHandler.handle(any()))
-            .thenReturn(Stream.of(new InvocationResponse(ErrorResponse.ERROR_METHOD, json, MethodCallId.of("#0"))));
+            .thenReturn(Flux.just(new InvocationResponse(ErrorResponse.ERROR_METHOD, json, MethodCallId.of("#0"))));
 
         given()
             .body("[[\"getAccounts\", {\"state\":false}, \"#0\"]]")
@@ -137,7 +139,7 @@ public class JMAPApiRoutesTest {
         arrayNode.add(list);
 
         when(requestHandler.handle(any()))
-            .thenReturn(Stream.of(new InvocationResponse(Method.Response.name("accounts"), json, MethodCallId.of("#0"))));
+            .thenReturn(Flux.just(new InvocationResponse(Method.Response.name("accounts"), json, MethodCallId.of("#0"))));
 
         given()
             .body("[[\"getAccounts\", {}, \"#0\"]]")
