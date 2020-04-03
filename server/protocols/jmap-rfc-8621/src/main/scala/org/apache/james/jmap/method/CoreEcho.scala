@@ -18,29 +18,12 @@
  * ***************************************************************/
 package org.apache.james.jmap.method
 
-import org.apache.james.jmap.json.Fixture.{invocation1, invocation2}
+import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.Invocation
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.apache.james.jmap.model.Invocation.MethodName
 
-class CoreEchoTest extends AnyWordSpec with Matchers {
-  private val echoMethod: CoreEcho = new CoreEcho()
+class CoreEcho extends Method {
+  override val methodName = MethodName("Core/echo1")
 
-  "CoreEcho" should {
-    "Process" should {
-      "success and return the same with parameters as the invocation request" in {
-        val expectedResponse: Invocation = invocation1
-        val dataResponse = echoMethod.process(invocation1).toList.head
-
-        dataResponse shouldBe expectedResponse
-      }
-
-      "success and not return anything else different than the original invocation" in {
-        val wrongExpected: Invocation = invocation2
-        val dataResponse = echoMethod.process(invocation1).toList.head
-        
-        dataResponse should not be(wrongExpected)
-      }
-    }
-  }
+  override def process(invocation: Invocation): LazyList[Invocation] = LazyList[Invocation](invocation)
 }
