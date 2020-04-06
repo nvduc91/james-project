@@ -664,6 +664,11 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-scala-extensions_${scala.base}</artifactId>
+                <version>0.5.1</version>
+            </dependency>
+            <dependency>
                 <groupId>${james.groupId}</groupId>
                 <artifactId>apache-james-backends-cassandra</artifactId>
                 <version>${project.version}</version>
@@ -1512,6 +1517,11 @@
             <dependency>
                 <groupId>${james.groupId}</groupId>
                 <artifactId>james-server-guice-webadmin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${james.groupId}</groupId>
+                <artifactId>james-server-jmap</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,3 +1,21 @@
+/** **************************************************************
+ * Licensed to the Apache Software Foundation (ASF) under one   *
+ * or more contributor license agreements.  See the NOTICE file *
+ * distributed with this work for additional information        *
+ * regarding copyright ownership.  The ASF licenses this file   *
+ * to you under the Apache License, Version 2.0 (the            *
+ * "License"); you may not use this file except in compliance   *
+ * with the License.  You may obtain a copy of the License at   *
+ * *
+ * http://www.apache.org/licenses/LICENSE-2.0                 *
+ * *
+ * Unless required by applicable law or agreed to in writing,   *
+ * software distributed under the License is distributed on an  *
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY       *
+ * KIND, either express or implied.  See the License for the    *
+ * specific language governing permissions and limitations      *
+ * under the License.                                           *
+ * ***************************************************************/
 package org.apache.james.jmap.routes
 
 import java.io.InputStream
@@ -40,16 +58,16 @@ class JMAPAPIRoutes extends JMAPRoutes {
   private def post(httpServerRequest: HttpServerRequest, httpServerResponse: HttpServerResponse): Mono[Void] =
     this.requestAsJsonStream(httpServerRequest)
       .flatMap(requestObject => this.process(requestObject, httpServerResponse))
-      .onErrorResume(throwable => Mono.from(errorHandling(throwable, httpServerResponse)))
+      .onErrorResume(throwable => SMono.fromPublisher(handleInternalError(httpServerResponse, throwable)))
       .subscribeOn(Schedulers.elastic)
+      .asJava()
 
-  private def requestAsJsonStream(httpServerRequest: HttpServerRequest): Mono[RequestObject] = {
+  private def requestAsJsonStream(httpServerRequest: HttpServerRequest): SMono[RequestObject] = {
     SMono.fromPublisher(httpServerRequest
       .receive()
       .aggregate()
       .asInputStream())
       .flatMap(this.parseRequestObject)
-      .asJava()
   }
 
   private def parseRequestObject(inputStream: InputStream): SMono[RequestObject] =
@@ -58,29 +76,20 @@ class JMAPAPIRoutes extends JMAPRoutes {
       case JsError(errors) => SMono.raiseError(new RuntimeException(errors.toString()))
     }
 
-  private def process(requestObject: RequestObject, httpServerResponse: HttpServerResponse): Mono[Void] = {
-    Mono.just(requestObject.methodCalls
-      .map(this.methodNameMatcher)
-      .foldLeft(Seq[Invocation]()) { (invocations: Seq[Invocation], lazyList: LazyList[Invocation]) =>
-        invocations.appended(lazyList.head)
-      })
-      .flatMap((invocations: Seq[Invocation]) => httpServerResponse.status(OK)
-        .header(CONTENT_TYPE, JSON_CONTENT_TYPE)
-        .sendString(Mono.just(new Serializer().serialize(new ResponseObject(ResponseObject.SESSION_STATE, invocations)).toString()))
-        .`then`()
-      )
-  }
+  private def process(requestObject: RequestObject, httpServerResponse: HttpServerResponse): SMono[Void] =
+    SMono.fromPublisher(
+      Mono.just(requestObject.methodCalls.flatMap(this.processMethodWithMatchName))
+        .flatMap((invocations: Seq[Invocation]) => httpServerResponse.status(OK)
+          .header(CONTENT_TYPE, JSON_CONTENT_TYPE)
+          .sendString(SMono.just(new Serializer().serialize(ResponseObject(ResponseObject.SESSION_STATE, invocations)).toString()))
+          .`then`()
+        ))
 
-  private def methodNameMatcher(invocation: Invocation): LazyList[Invocation] = invocation.methodName match {
+  private def processMethodWithMatchName(invocation: Invocation): LazyList[Invocation] = invocation.methodName match {
     case coreEcho.methodName => coreEcho.process(invocation)
     case _ => LazyList[Invocation](new Invocation(
       MethodName("error"),
       Arguments(Json.obj("type" -> "Not implemented")),
       invocation.methodCallId))
   }
-
-  private def errorHandling(throwable: Throwable, response: HttpServerResponse): Mono[Void] =
-    throwable match {
-      case _: Throwable => handleInternalError(response, throwable)
-    }
 }

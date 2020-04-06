@@ -23,7 +23,7 @@ import org.apache.james.jmap.model.Invocation
 import org.apache.james.jmap.model.Invocation.MethodName
 
 class CoreEcho extends Method {
-  override val methodName = MethodName("Core/echo1")
+  override val methodName = MethodName("Core/echo")
 
   override def process(invocation: Invocation): LazyList[Invocation] = LazyList[Invocation](invocation)
 }
