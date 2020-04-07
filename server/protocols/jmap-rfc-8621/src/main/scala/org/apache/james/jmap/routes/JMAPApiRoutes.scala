@@ -88,7 +88,8 @@ class JMAPApiRoutes extends JMAPRoutes {
         SMono.fromPublisher(httpServerResponse.status(OK)
           .header(CONTENT_TYPE, JSON_CONTENT_TYPE)
           .sendString(
-            SMono.just(new Serializer().serialize(ResponseObject(ResponseObject.SESSION_STATE, invocations)).toString()),
+            SMono.fromCallable(() =>
+              new Serializer().serialize(ResponseObject(ResponseObject.SESSION_STATE, invocations)).toString()),
             StandardCharsets.UTF_8
           ).`then`())
       )
