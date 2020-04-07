@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
@@ -63,16 +62,6 @@ public class CassandraCacheConfigurationTest {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
             .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(NEGATIVE_TIME_OUT)
-            .ttl(_1_SEC_TTL)
-            .build())
-            .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void shouldThrowWhenConfiguredTooLongTimeout() {
-        assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
-            .timeOut(_2_HOURS_TIME_OUT)
             .ttl(_1_SEC_TTL)
             .build())
             .isInstanceOf(IllegalArgumentException.class);
