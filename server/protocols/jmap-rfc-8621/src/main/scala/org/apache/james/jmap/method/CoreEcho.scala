@@ -18,12 +18,15 @@
  * ***************************************************************/
 package org.apache.james.jmap.method
 
+
 import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.Invocation
 import org.apache.james.jmap.model.Invocation.MethodName
+import org.reactivestreams.Publisher
+import reactor.core.scala.publisher.SMono
 
 class CoreEcho extends Method {
   override val methodName = MethodName("Core/echo")
 
-  override def process(invocation: Invocation): LazyList[Invocation] = LazyList[Invocation](invocation)
+  override def process(invocation: Invocation): Publisher[Invocation] = SMono.just(invocation)
 }
