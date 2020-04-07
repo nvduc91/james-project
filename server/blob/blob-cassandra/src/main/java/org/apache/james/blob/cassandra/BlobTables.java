@@ -48,4 +48,10 @@ public interface BlobTables {
         String CHUNK_NUMBER = "chunkNumber";
         String DATA = "data";
     }
+
+    interface DumbBlobCache {
+        String TABLE_NAME = "blobCache";
+        String ID = "id";
+        String DATA = "data";
+    }
 }
