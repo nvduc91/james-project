@@ -16,17 +16,35 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  ****************************************************************/
+
 package org.apache.james.blob.cassandra.cache;
 
-import java.io.InputStream;
+import static com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit.HOURS;
 
-import org.apache.james.blob.api.BlobId;
-import org.reactivestreams.Publisher;
+import org.apache.james.backends.cassandra.components.CassandraModule;
+import org.apache.james.blob.cassandra.BlobTables;
 
-public interface DumbBlobStoreCache {
-    Publisher<Void> cache(BlobId blobId, byte[] data);
-    Publisher<Void> cache(BlobId blobId, InputStream data);
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 
-    Publisher<byte[]> read(BlobId blobId);
-    Publisher<Void> remove(BlobId blobId);
+public interface CassandraDumbBlobCacheModule {
+
+    Double NO_READ_REPAIR = 0.0;
+
+    CassandraModule MODULE = CassandraModule
+        .builder()
+
+        .table(BlobTables.DumbBlobCache.TABLE_NAME)
+        .options(options -> options
+            .compactionOptions(SchemaBuilder.timeWindowCompactionStrategy()
+                .compactionWindowSize(1)
+                .compactionWindowUnit(HOURS))
+            .readRepairChance(NO_READ_REPAIR))
+        .comment("Write through cache for small blobs stored in a slower blob store implementation which is object storage" +
+            "Messages` headers and bodies are stored as blobparts.")
+        .statement(statement -> statement
+            .addPartitionKey(BlobTables.DumbBlobCache.ID, DataType.text())
+            .addColumn(BlobTables.DumbBlobCache.DATA, DataType.blob()))
+
+        .build();
 }

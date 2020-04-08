@@ -1,20 +1,41 @@
+/****************************************************************
+ * Licensed to the Apache Software Foundation (ASF) under one   *
+ * or more contributor license agreements.  See the NOTICE file *
+ * distributed with this work for additional information        *
+ * regarding copyright ownership.  The ASF licenses this file   *
+ * to you under the Apache License, Version 2.0 (the            *
+ * "License"); you may not use this file except in compliance   *
+ * with the License.  You may obtain a copy of the License at   *
+ *                                                              *
+ *   http://www.apache.org/licenses/LICENSE-2.0                 *
+ *                                                              *
+ * Unless required by applicable law or agreed to in writing,   *
+ * software distributed under the License is distributed on an  *
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY       *
+ * KIND, either express or implied.  See the License for the    *
+ * specific language governing permissions and limitations      *
+ * under the License.                                           *
+ ****************************************************************/
 package org.apache.james.blob.cassandra.cache;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 import org.apache.james.backends.cassandra.CassandraCluster;
 import org.apache.james.backends.cassandra.CassandraClusterExtension;
 import org.apache.james.blob.api.BlobId;
 import org.apache.james.blob.api.HashBlobId;
-import org.apache.james.blob.cassandra.CassandraBlobModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContract {
 
     @RegisterExtension
-    static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraBlobModule.MODULE);
+    static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraDumbBlobCacheModule.MODULE);
 
-    private final long DEFAULT_TIME_OUT = 50;
-    private final int DEFAULT_MAX_SIZE = 8;
+    private final Duration DEFAULT_TIME_OUT = Duration.of(50, ChronoUnit.MILLIS);
+    private final int DEFAULT_THRESHOLD = EIGHT_KILOBYTES.length;
+    private final int _10_SEC_TTL = 10;
 
     private DumbBlobStoreCache testee;
     private HashBlobId.Factory blobIdFactory;
@@ -22,7 +43,11 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     @BeforeEach
     void setUp(CassandraCluster cassandra) {
         blobIdFactory = new HashBlobId.Factory();
-        CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration(DEFAULT_TIME_OUT, DEFAULT_MAX_SIZE);
+        CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
+            .sizeThreshold(DEFAULT_THRESHOLD)
+            .timeOut(DEFAULT_TIME_OUT)
+            .ttl(ttl())
+            .build();
         testee = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfiguration);
     }
 
@@ -34,5 +59,10 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     @Override
     public BlobId.Factory blobIdFactory() {
         return blobIdFactory;
+    }
+
+    @Override
+    public int ttl() {
+        return _10_SEC_TTL;
     }
 }

@@ -26,7 +26,6 @@ import org.apache.james.blob.cassandra.BlobTables.BucketBlobParts;
 import org.apache.james.blob.cassandra.BlobTables.BucketBlobTable;
 import org.apache.james.blob.cassandra.BlobTables.DefaultBucketBlobParts;
 import org.apache.james.blob.cassandra.BlobTables.DefaultBucketBlobTable;
-import org.apache.james.blob.cassandra.BlobTables.DumbBlobCache;
 
 import com.datastax.driver.core.DataType;
 
@@ -65,13 +64,6 @@ public interface CassandraBlobModule {
             .addPartitionKey(BucketBlobParts.BUCKET, DataType.text())
             .addPartitionKey(BucketBlobParts.ID, DataType.text())
             .addClusteringColumn(BucketBlobTable.NUMBER_OF_CHUNK, DataType.cint()))
-
-        .table(DumbBlobCache.TABLE_NAME)
-        .comment("Holds information for cache all blob parts composing" +
-            "Messages` headers and bodies are stored as blobparts.")
-        .statement(statement -> statement
-            .addPartitionKey(DumbBlobCache.ID, DataType.text())
-            .addColumn(DumbBlobCache.DATA, DataType.blob()))
 
         .build();
 }

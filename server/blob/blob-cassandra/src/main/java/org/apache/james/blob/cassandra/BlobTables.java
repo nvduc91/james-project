@@ -53,5 +53,6 @@ public interface BlobTables {
         String TABLE_NAME = "blobCache";
         String ID = "id";
         String DATA = "data";
+        String TTL = "ttl";
     }
 }
