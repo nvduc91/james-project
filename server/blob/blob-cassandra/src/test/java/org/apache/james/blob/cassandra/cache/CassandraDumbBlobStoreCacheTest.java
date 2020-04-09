@@ -34,8 +34,8 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraDumbBlobCacheModule.MODULE);
 
     private final Duration DEFAULT_TIME_OUT = Duration.of(50, ChronoUnit.MILLIS);
-    private final int DEFAULT_THRESHOLD = EIGHT_KILOBYTES.length;
-    private final int _10_SEC_TTL = 10;
+    private final int DEFAULT_THRESHOLD_IN_BYTES = EIGHT_KILOBYTES.length;
+    private final Duration _1_SEC_TTL = Duration.ofSeconds(1);
 
     private DumbBlobStoreCache testee;
     private HashBlobId.Factory blobIdFactory;
@@ -44,9 +44,9 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     void setUp(CassandraCluster cassandra) {
         blobIdFactory = new HashBlobId.Factory();
         CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
-            .ttl(ttl())
+            .ttl(_1_SEC_TTL)
             .build();
         testee = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfiguration);
     }
@@ -59,10 +59,5 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     @Override
     public BlobId.Factory blobIdFactory() {
         return blobIdFactory;
-    }
-
-    @Override
-    public int ttl() {
-        return _10_SEC_TTL;
     }
 }

@@ -18,15 +18,16 @@
  ****************************************************************/
 package org.apache.james.blob.cassandra.cache;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import org.apache.james.blob.api.BlobId;
+import org.awaitility.Duration;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Strings;
@@ -42,11 +43,8 @@ public interface DumbBlobStoreCacheContract {
 
     BlobId.Factory blobIdFactory();
 
-    int ttl();
-
     @Test
     default void shouldSaveWhenCacheSmallByteData() {
-        System.out.println(EIGHT_KILOBYTES.length);
         BlobId blobId = blobIdFactory().randomId();
         assertThatCode(Mono.from(testee().cache(blobId, EIGHT_KILOBYTES))::block)
             .doesNotThrowAnyException();
@@ -61,8 +59,8 @@ public interface DumbBlobStoreCacheContract {
         assertThatCode(Mono.from(testee().cache(blobId, TWELVE_MEGABYTES))::block)
             .doesNotThrowAnyException();
 
-        byte[] actual = Mono.from(testee().read(blobId)).block();
-        assertThat(actual).isNull();
+        Optional<byte[]> actual = Mono.from(testee().read(blobId)).blockOptional();
+        assertThat(actual).isEmpty();
     }
 
     @Test
@@ -81,8 +79,8 @@ public interface DumbBlobStoreCacheContract {
         assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(TWELVE_MEGABYTES)))::block)
             .doesNotThrowAnyException();
 
-        byte[] actual = Mono.from(testee().read(blobId)).block();
-        assertThat(actual).isNull();
+        Optional<byte[]> actual = Mono.from(testee().read(blobId)).blockOptional();
+        assertThat(actual).isEmpty();
     }
 
     @Test
@@ -106,9 +104,9 @@ public interface DumbBlobStoreCacheContract {
         BlobId blobId = blobIdFactory().randomId();
         Mono.from(testee().cache(blobId, EIGHT_KILOBYTES)).block();
         Mono.from(testee().remove(blobId)).block();
-        byte[] actual = Mono.from(testee().read(blobId)).block();
 
-        assertThat(actual).isNull();
+        Optional<byte[]> actual = Mono.from(testee().read(blobId)).blockOptional();
+        assertThat(actual).isEmpty();
     }
 
     @Test
@@ -129,7 +127,7 @@ public interface DumbBlobStoreCacheContract {
         assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(EIGHT_KILOBYTES)))::block)
             .doesNotThrowAnyException();
 
-        await().atMost(ttl(), SECONDS).await().untilAsserted(()
+        await().atMost(Duration.ONE_SECOND).await().untilAsserted(()
             -> assertThat(Mono.from(testee().read(blobId)).block()).containsExactly(EIGHT_KILOBYTES));
     }
 
@@ -139,7 +137,7 @@ public interface DumbBlobStoreCacheContract {
         assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(EIGHT_KILOBYTES)))::block)
             .doesNotThrowAnyException();
 
-        await().atMost(ttl() + 1, SECONDS).await().untilAsserted(()
+        await().atMost(Duration.TWO_SECONDS).await().untilAsserted(()
             -> assertThat(Mono.from(testee().read(blobId)).block()).isNull());
     }
 }

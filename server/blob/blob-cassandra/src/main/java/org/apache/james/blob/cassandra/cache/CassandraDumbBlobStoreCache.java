@@ -27,6 +27,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.ttl;
 import static org.apache.james.blob.cassandra.BlobTables.BucketBlobTable.ID;
 import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.DATA;
+import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TABLE_NAME;
 import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TTL;
 
 import java.io.BufferedInputStream;
@@ -39,7 +40,6 @@ import javax.inject.Inject;
 import org.apache.commons.io.IOUtils;
 import org.apache.james.backends.cassandra.utils.CassandraAsyncExecutor;
 import org.apache.james.blob.api.BlobId;
-import org.apache.james.blob.cassandra.BlobTables;
 import org.reactivestreams.Publisher;
 
 import com.datastax.driver.core.ConsistencyLevel;
@@ -73,7 +73,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
 
         return Mono.just(bytes)
             .flatMap(data -> {
-                if (data.length > cacheConfiguration.getSizeThreshold()) {
+                if (data.length > cacheConfiguration.getByteThresholdSize()) {
                     return Mono.empty();
                 } else {
                     return Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length)));
@@ -86,7 +86,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
             insertStatement.bind()
                 .setString(ID, blobId.asString())
                 .setBytes(DATA, data)
-                .setInt(TTL, cacheConfiguration.getTtl())
+                .setInt(TTL, Long.valueOf(cacheConfiguration.getTtl().getSeconds()).intValue())
                 .setConsistencyLevel(ConsistencyLevel.ONE));
     }
 
@@ -94,14 +94,17 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     public Publisher<Void> cache(BlobId blobId, InputStream inputStream) {
         Preconditions.checkNotNull(inputStream);
 
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, cacheConfiguration.getSizeThreshold() + 1);
-        return Mono.fromCallable(() -> isGreaterThanThreshold(bufferedInputStream))
-            .filter(bigStream -> !bigStream)
-            .flatMap(ignored ->
-                Mono.fromCallable(() -> IOUtils.toByteArray(bufferedInputStream))
-                    .flatMap(bytes -> Mono.from(save(blobId, ByteBuffer.wrap(bytes, 0, bytes.length)))))
-            .switchIfEmpty(Mono.empty())
-            .doFinally(any -> closeInputStreamQuite(inputStream));
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, cacheConfiguration.getByteThresholdSize() + 1);
+
+        return Mono.using(() -> isGreaterThanThreshold(bufferedInputStream),
+            isGreaterThanThreshold ->
+                Mono.just(isGreaterThanThreshold)
+                    .filter(bigStream -> !bigStream)
+                    .flatMap(ignored ->
+                        Mono.fromCallable(() -> IOUtils.toByteArray(bufferedInputStream))
+                            .flatMap(bytes -> Mono.from(save(blobId, ByteBuffer.wrap(bytes, 0, bytes.length)))))
+                    .switchIfEmpty(Mono.empty()),
+            any -> closeInputStreamQuite(inputStream));
 
     }
 
@@ -125,20 +128,20 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     private PreparedStatement prepareDelete(Session session) {
         return session.prepare(
             delete().
-                from(BlobTables.DumbBlobCache.TABLE_NAME)
+                from(TABLE_NAME)
                 .where(eq(ID, bindMarker(ID))));
     }
 
     private PreparedStatement prepareSelect(Session session) {
         return session.prepare(
             select()
-                .from(BlobTables.DumbBlobCache.TABLE_NAME)
+                .from(TABLE_NAME)
                 .where(eq(ID, bindMarker(ID))));
     }
 
     private PreparedStatement prepareInsert(Session session) {
         return session.prepare(
-            insertInto(BlobTables.DumbBlobCache.TABLE_NAME)
+            insertInto(TABLE_NAME)
                 .value(ID, bindMarker(ID))
                 .value(DATA, bindMarker(DATA))
                 .using(ttl(bindMarker(TTL)))
@@ -147,7 +150,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
 
     private boolean isGreaterThanThreshold(BufferedInputStream bufferedData) throws IOException {
         bufferedData.mark(0);
-        bufferedData.skip(cacheConfiguration.getSizeThreshold());
+        bufferedData.skip(cacheConfiguration.getByteThresholdSize());
         boolean readable = bufferedData.read() != -1;
         bufferedData.reset();
         return readable;

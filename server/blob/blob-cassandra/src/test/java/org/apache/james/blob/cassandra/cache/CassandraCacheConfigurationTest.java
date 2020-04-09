@@ -33,34 +33,32 @@ public class CassandraCacheConfigurationTest {
 
     byte[] EIGHT_KILOBYTES = Strings.repeat("01234567\n", 1000).getBytes(StandardCharsets.UTF_8);
     private final Duration DEFAULT_TIME_OUT = Duration.of(50, ChronoUnit.MILLIS);
-    private final int DEFAULT_THRESHOLD = EIGHT_KILOBYTES.length;
-    private final int _10_SEC_TTL = 10;
+    private final int DEFAULT_THRESHOLD_SIZE_IN_BYTES = EIGHT_KILOBYTES.length;
+    private final Duration _1_SEC_TTL = Duration.ofSeconds(1);
 
     private final Duration NEGATIVE_TIME_OUT = Duration.of(-50, ChronoUnit.MILLIS);
-    private final int NEGATIVE_THRESHOLD = -1 * EIGHT_KILOBYTES.length;
-    private final int NEGATIVE_TTL = -10;
-
-    private final CassandraCacheConfiguration DEFAULT_CONFIG = new CassandraCacheConfiguration(DEFAULT_TIME_OUT, DEFAULT_THRESHOLD, _10_SEC_TTL);
+    private final int NEGATIVE_THRESHOLD_SIZE_IN_BYTES = -1 * EIGHT_KILOBYTES.length;
+    private final Duration NEGATIVE_TTL = Duration.ofSeconds(-1);
 
     @Test
-    void shouldReturnTheSameAsConfigured() {
+    void shouldReturnTheCorrectConfigured() {
         CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
-            .ttl(_10_SEC_TTL)
+            .ttl(_1_SEC_TTL)
             .build();
 
         assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("timeOut", DEFAULT_TIME_OUT);
-        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("sizeThreshold", DEFAULT_THRESHOLD);
-        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("ttl", _10_SEC_TTL);
+        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("byteThresholdSize", DEFAULT_THRESHOLD_SIZE_IN_BYTES);
+        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("ttl", _1_SEC_TTL);
     }
 
     @Test
     void shouldThrowWhenConfiguredNegativeTimeout() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(NEGATIVE_TIME_OUT)
-            .ttl(_10_SEC_TTL)
+            .ttl(_1_SEC_TTL)
             .build())
             .isInstanceOf(IllegalArgumentException.class);
     }
@@ -68,9 +66,9 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNullTimeout() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(null)
-            .ttl(_10_SEC_TTL)
+            .ttl(_1_SEC_TTL)
             .build())
             .isInstanceOf(NullPointerException.class);
     }
@@ -78,7 +76,7 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNegativeTTL() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(NEGATIVE_TTL)
             .build())
@@ -88,9 +86,9 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredZeroTTL() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD)
+            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
-            .ttl(0)
+            .ttl(Duration.ofSeconds(0))
             .build())
             .isInstanceOf(IllegalArgumentException.class);
     }
@@ -98,9 +96,9 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNegativeThreshold() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(NEGATIVE_THRESHOLD)
+            .sizeThreshold(NEGATIVE_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
-            .ttl(_10_SEC_TTL)
+            .ttl(_1_SEC_TTL)
             .build())
             .isInstanceOf(IllegalArgumentException.class);
     }

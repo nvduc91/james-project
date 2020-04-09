@@ -20,18 +20,59 @@
 package org.apache.james.blob.cassandra.cache;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 
 public class CassandraCacheConfiguration {
 
     private final Duration timeOut;
-    private final int sizeThreshold;
-    private final int ttl;
+    private final int byteThresholdSize;
+    private final Duration ttl;
 
-    public CassandraCacheConfiguration(Duration timeout, int sizeThreshold, int ttl) {
+    public static class Builder {
+        private final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(50);
+        private final Duration DEFAULT_TTL = Duration.ofSeconds(50);
+        private final int DEFAULT_BYTE_THRESHOLD_SIZE = 8 * 1000;
+
+        private Optional<Duration> timeout = Optional.empty();
+        private Optional<Integer> byteThresholdSize = Optional.empty();
+        private Optional<Duration> ttl = Optional.empty();
+
+        public Builder timeOut(Duration timeout) {
+            Preconditions.checkNotNull(timeout, "'Threshold size' must not to be null");
+            Preconditions.checkArgument(timeout.toMillis() > 0, "'Threshold size' needs to be positive");
+
+            this.timeout = Optional.of(timeout);
+            return this;
+        }
+
+        public Builder sizeThreshold(int sizeThreshold) {
+            Preconditions.checkArgument(sizeThreshold >= 0, "'Threshold size' needs to be positive");
+
+            this.byteThresholdSize = Optional.of(sizeThreshold);
+            return this;
+        }
+
+        public Builder ttl(Duration ttl) {
+            Preconditions.checkNotNull(ttl, "'TTL' must not to be null");
+            Preconditions.checkArgument(ttl.getSeconds() > 0, "'TTL' needs to be positive");
+
+            this.ttl = Optional.of(ttl);
+            return this;
+        }
+
+        public CassandraCacheConfiguration build() {
+            return new CassandraCacheConfiguration(
+                timeout.orElse(DEFAULT_TIMEOUT),
+                byteThresholdSize.orElse(DEFAULT_BYTE_THRESHOLD_SIZE),
+                ttl.orElse(DEFAULT_TTL));
+        }
+    }
+
+    private CassandraCacheConfiguration(Duration timeout, int byteThresholdSize, Duration ttl) {
         this.timeOut = timeout;
-        this.sizeThreshold = sizeThreshold;
+        this.byteThresholdSize = byteThresholdSize;
         this.ttl = ttl;
     }
 
@@ -39,40 +80,11 @@ public class CassandraCacheConfiguration {
         return timeOut;
     }
 
-    public int getTtl() {
+    public Duration getTtl() {
         return ttl;
     }
 
-    public int getSizeThreshold() {
-        return sizeThreshold;
-    }
-
-    public static class Builder {
-        private Duration timeOut;
-        private int sizeThreshold;
-        private int ttl;
-
-        public Builder timeOut(Duration timeOut) {
-            Preconditions.checkNotNull(timeOut, "'Threshold size' must not to be null");
-            Preconditions.checkArgument(timeOut.toMillis() > 0, "'Threshold size' needs to be positive");
-            this.timeOut = timeOut;
-            return this;
-        }
-
-        public Builder sizeThreshold(int sizeThreshold) {
-            Preconditions.checkArgument(sizeThreshold >= 0, "'Threshold size' needs to be positive");
-            this.sizeThreshold = sizeThreshold;
-            return this;
-        }
-
-        public Builder ttl(int ttl) {
-            Preconditions.checkArgument(ttl > 0, "'TTL' needs to be positive");
-            this.ttl = ttl;
-            return this;
-        }
-
-        public CassandraCacheConfiguration build() {
-            return new CassandraCacheConfiguration(this.timeOut, this.sizeThreshold, this.ttl);
-        }
+    public int getByteThresholdSize() {
+        return byteThresholdSize;
     }
 }
