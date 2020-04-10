@@ -69,15 +69,13 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     @Override
     public Publisher<Void> cache(BlobId blobId, byte[] bytes) {
         Preconditions.checkNotNull(bytes, "Data must not be null");
-        Preconditions.checkArgument(bytes.length > 0, "Data must not be empty");
 
         return Mono.just(bytes)
             .flatMap(data -> {
-                if (data.length > cacheConfiguration.getByteThresholdSize()) {
+                if (data.length > cacheConfiguration.getSizeThresholdInBytes()) {
                     return Mono.empty();
-                } else {
-                    return Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length)));
                 }
+                return Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length)));
             });
     }
 
@@ -86,7 +84,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
             insertStatement.bind()
                 .setString(ID, blobId.asString())
                 .setBytes(DATA, data)
-                .setInt(TTL, Long.valueOf(cacheConfiguration.getTtl().getSeconds()).intValue())
+                .setInt(TTL, Math.toIntExact(cacheConfiguration.getTtl().getSeconds()))
                 .setConsistencyLevel(ConsistencyLevel.ONE));
     }
 
@@ -94,16 +92,10 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     public Publisher<Void> cache(BlobId blobId, InputStream inputStream) {
         Preconditions.checkNotNull(inputStream);
 
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, cacheConfiguration.getByteThresholdSize() + 1);
-
-        return Mono.using(() -> isGreaterThanThreshold(bufferedInputStream),
-            isGreaterThanThreshold ->
-                Mono.just(isGreaterThanThreshold)
-                    .filter(bigStream -> !bigStream)
-                    .flatMap(ignored ->
-                        Mono.fromCallable(() -> IOUtils.toByteArray(bufferedInputStream))
-                            .flatMap(bytes -> Mono.from(save(blobId, ByteBuffer.wrap(bytes, 0, bytes.length)))))
-                    .switchIfEmpty(Mono.empty()),
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream,
+            cacheConfiguration.getSizeThresholdInBytes() + 1);
+        return Mono.using(() -> IOUtils.toByteArray(bufferedInputStream),
+            bytes -> Mono.from(cache(blobId, bytes)),
             any -> closeInputStreamQuite(inputStream));
 
     }
@@ -114,9 +106,11 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
             .executeSingleRow(
                 selectStatement.bind()
                     .setString(ID, blobId.asString())
-                    .setConsistencyLevel(ConsistencyLevel.ONE))
-            .map(row -> row.getBytes(DATA).array())
-            .timeout(cacheConfiguration.getTimeOut(), Mono.empty());
+                    .setConsistencyLevel(ConsistencyLevel.ONE)
+                    .setReadTimeoutMillis(Math.toIntExact(cacheConfiguration.getTimeOut().toMillis()))
+            )
+            .map(row -> row.getBytes(DATA).array());
+
     }
 
     @Override
@@ -127,8 +121,8 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
 
     private PreparedStatement prepareDelete(Session session) {
         return session.prepare(
-            delete().
-                from(TABLE_NAME)
+            delete()
+                .from(TABLE_NAME)
                 .where(eq(ID, bindMarker(ID))));
     }
 
@@ -148,18 +142,11 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
         );
     }
 
-    private boolean isGreaterThanThreshold(BufferedInputStream bufferedData) throws IOException {
-        bufferedData.mark(0);
-        bufferedData.skip(cacheConfiguration.getByteThresholdSize());
-        boolean readable = bufferedData.read() != -1;
-        bufferedData.reset();
-        return readable;
-    }
-
     private void closeInputStreamQuite(InputStream inputStream) {
         try {
             inputStream.close();
         } catch (IOException e) {
+            // Ignore
         }
     }
 }

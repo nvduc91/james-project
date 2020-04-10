@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Strings;
@@ -43,20 +44,22 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldReturnTheCorrectConfigured() {
         CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(_1_SEC_TTL)
             .build();
 
-        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("timeOut", DEFAULT_TIME_OUT);
-        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("byteThresholdSize", DEFAULT_THRESHOLD_SIZE_IN_BYTES);
-        assertThat(cacheConfiguration).hasFieldOrPropertyWithValue("ttl", _1_SEC_TTL);
+        SoftAssertions.assertSoftly(soflty -> {
+            assertThat(cacheConfiguration.getTimeOut()).isEqualTo(DEFAULT_TIME_OUT);
+            assertThat(cacheConfiguration.getSizeThresholdInBytes()).isEqualTo(DEFAULT_THRESHOLD_SIZE_IN_BYTES);
+            assertThat(cacheConfiguration.getTtl()).isEqualTo(_1_SEC_TTL);
+        });
     }
 
     @Test
     void shouldThrowWhenConfiguredNegativeTimeout() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(NEGATIVE_TIME_OUT)
             .ttl(_1_SEC_TTL)
             .build())
@@ -66,7 +69,7 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNullTimeout() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(null)
             .ttl(_1_SEC_TTL)
             .build())
@@ -76,7 +79,7 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNegativeTTL() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(NEGATIVE_TTL)
             .build())
@@ -86,7 +89,7 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredZeroTTL() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(Duration.ofSeconds(0))
             .build())
@@ -96,7 +99,7 @@ public class CassandraCacheConfigurationTest {
     @Test
     void shouldThrowWhenConfiguredNegativeThreshold() {
         assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(NEGATIVE_THRESHOLD_SIZE_IN_BYTES)
+            .sizeThresholdInBytes(NEGATIVE_THRESHOLD_SIZE_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(_1_SEC_TTL)
             .build())

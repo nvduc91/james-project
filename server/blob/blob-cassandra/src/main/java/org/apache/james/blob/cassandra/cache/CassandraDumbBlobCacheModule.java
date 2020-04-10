@@ -33,7 +33,6 @@ public interface CassandraDumbBlobCacheModule {
 
     CassandraModule MODULE = CassandraModule
         .builder()
-
         .table(BlobTables.DumbBlobCache.TABLE_NAME)
         .options(options -> options
             .compactionOptions(SchemaBuilder.timeWindowCompactionStrategy()
@@ -45,6 +44,5 @@ public interface CassandraDumbBlobCacheModule {
         .statement(statement -> statement
             .addPartitionKey(BlobTables.DumbBlobCache.ID, DataType.text())
             .addColumn(BlobTables.DumbBlobCache.DATA, DataType.blob()))
-
         .build();
 }

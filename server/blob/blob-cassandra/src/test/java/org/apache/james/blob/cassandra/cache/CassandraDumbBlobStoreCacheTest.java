@@ -44,7 +44,7 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     void setUp(CassandraCluster cassandra) {
         blobIdFactory = new HashBlobId.Factory();
         CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
-            .sizeThreshold(DEFAULT_THRESHOLD_IN_BYTES)
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_IN_BYTES)
             .timeOut(DEFAULT_TIME_OUT)
             .ttl(_1_SEC_TTL)
             .build();
