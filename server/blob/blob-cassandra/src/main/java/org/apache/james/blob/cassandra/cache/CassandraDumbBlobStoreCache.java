@@ -92,12 +92,10 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     public Publisher<Void> cache(BlobId blobId, InputStream inputStream) {
         Preconditions.checkNotNull(inputStream);
 
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream,
-            cacheConfiguration.getSizeThresholdInBytes() + 1);
-        return Mono.using(() -> IOUtils.toByteArray(bufferedInputStream),
+        return Mono.using(() -> IOUtils.toByteArray(new BufferedInputStream(inputStream,
+                cacheConfiguration.getSizeThresholdInBytes() + 1)),
             bytes -> Mono.from(cache(blobId, bytes)),
             any -> closeInputStreamQuite(inputStream));
-
     }
 
     @Override
@@ -109,6 +107,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
                     .setConsistencyLevel(ConsistencyLevel.ONE)
                     .setReadTimeoutMillis(Math.toIntExact(cacheConfiguration.getTimeOut().toMillis()))
             )
+            .onErrorResume(Mono::error)
             .map(row -> row.getBytes(DATA).array());
 
     }

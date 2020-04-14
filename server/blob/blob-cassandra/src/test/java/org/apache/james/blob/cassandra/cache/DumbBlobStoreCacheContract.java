@@ -138,6 +138,6 @@ public interface DumbBlobStoreCacheContract {
             .doesNotThrowAnyException();
 
         await().atMost(Duration.TWO_SECONDS).await().untilAsserted(()
-            -> assertThat(Mono.from(testee().read(blobId)).block()).isNull());
+            -> assertThat(Mono.from(testee().read(blobId)).blockOptional()).isEmpty());
     }
 }

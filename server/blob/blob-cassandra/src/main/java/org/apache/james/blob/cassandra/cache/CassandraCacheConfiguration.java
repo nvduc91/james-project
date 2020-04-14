@@ -53,7 +53,7 @@ public class CassandraCacheConfiguration {
         public Builder ttl(Duration ttl) {
             Preconditions.checkNotNull(ttl, "'TTL' must not to be null");
             Preconditions.checkArgument(ttl.getSeconds() > 0, "'TTL' needs to be positive");
-            Preconditions.checkArgument(ttl.getSeconds() < Integer.MAX_VALUE, "'TTL' must not grater than %s", Integer.MAX_VALUE);
+            Preconditions.checkArgument(ttl.getSeconds() < Integer.MAX_VALUE, "'TTL' must not greater than %s", Integer.MAX_VALUE);
 
             this.ttl = Optional.of(ttl);
             return this;

@@ -36,6 +36,7 @@ public class CassandraCacheConfigurationTest {
     private final Duration DEFAULT_TIME_OUT = Duration.of(50, ChronoUnit.MILLIS);
     private final int DEFAULT_THRESHOLD_SIZE_IN_BYTES = EIGHT_KILOBYTES.length;
     private final Duration _1_SEC_TTL = Duration.ofSeconds(1);
+    private final Duration TOO_BIG_TTL = Duration.ofSeconds(Integer.MAX_VALUE + 1L);
 
     private final Duration NEGATIVE_TIME_OUT = Duration.of(-50, ChronoUnit.MILLIS);
     private final int NEGATIVE_THRESHOLD_SIZE_IN_BYTES = -1 * EIGHT_KILOBYTES.length;
@@ -74,6 +75,16 @@ public class CassandraCacheConfigurationTest {
             .ttl(_1_SEC_TTL)
             .build())
             .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void shouldThrowWhenConfiguredTooBigTTL() {
+        assertThatThrownBy(() -> new CassandraCacheConfiguration.Builder()
+            .sizeThresholdInBytes(DEFAULT_THRESHOLD_SIZE_IN_BYTES)
+            .timeOut(DEFAULT_TIME_OUT)
+            .ttl(TOO_BIG_TTL)
+            .build())
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
