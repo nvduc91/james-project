@@ -50,7 +50,7 @@ public interface BlobTables {
     }
 
     interface DumbBlobCache {
-        String TABLE_NAME = "blobCache";
+        String TABLE_NAME = "blob_cache";
         String ID = "id";
         String DATA = "data";
         String TTL_FOR_ROW = "ttl";
