@@ -28,16 +28,12 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.ttl;
 import static org.apache.james.blob.cassandra.BlobTables.BucketBlobTable.ID;
 import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.DATA;
 import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TABLE_NAME;
-import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TTL;
+import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TTL_FOR_ROW;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import javax.inject.Inject;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.james.backends.cassandra.utils.CassandraAsyncExecutor;
 import org.apache.james.blob.api.BlobId;
 import org.reactivestreams.Publisher;
@@ -45,7 +41,6 @@ import org.reactivestreams.Publisher;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Preconditions;
 
 import reactor.core.publisher.Mono;
 
@@ -55,7 +50,9 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
     private final PreparedStatement insertStatement;
     private final PreparedStatement selectStatement;
     private final PreparedStatement deleteStatement;
-    private final CassandraCacheConfiguration cacheConfiguration;
+
+    private final int readTimeOutFromDataBase;
+    private final int timeToLive;
 
     @Inject
     public CassandraDumbBlobStoreCache(Session session, CassandraCacheConfiguration cacheConfiguration) {
@@ -63,20 +60,15 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
         this.insertStatement = prepareInsert(session);
         this.selectStatement = prepareSelect(session);
         this.deleteStatement = prepareDelete(session);
-        this.cacheConfiguration = cacheConfiguration;
+
+        this.readTimeOutFromDataBase = (int) cacheConfiguration.getReadTimeOut().toMillis();
+        this.timeToLive = (int) cacheConfiguration.getTtl().getSeconds();
     }
 
     @Override
     public Publisher<Void> cache(BlobId blobId, byte[] bytes) {
-        Preconditions.checkNotNull(bytes, "Data must not be null");
-
         return Mono.just(bytes)
-            .flatMap(data -> {
-                if (data.length > cacheConfiguration.getSizeThresholdInBytes()) {
-                    return Mono.empty();
-                }
-                return Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length)));
-            });
+            .flatMap(data -> Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length))));
     }
 
     private Publisher<Void> save(BlobId blobId, ByteBuffer data) {
@@ -84,18 +76,8 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
             insertStatement.bind()
                 .setString(ID, blobId.asString())
                 .setBytes(DATA, data)
-                .setInt(TTL, Math.toIntExact(cacheConfiguration.getTtl().getSeconds()))
+                .setInt(TTL_FOR_ROW, timeToLive)
                 .setConsistencyLevel(ConsistencyLevel.ONE));
-    }
-
-    @Override
-    public Publisher<Void> cache(BlobId blobId, InputStream inputStream) {
-        Preconditions.checkNotNull(inputStream);
-
-        return Mono.using(() -> IOUtils.toByteArray(new BufferedInputStream(inputStream,
-                cacheConfiguration.getSizeThresholdInBytes() + 1)),
-            bytes -> Mono.from(cache(blobId, bytes)),
-            any -> closeInputStreamQuite(inputStream));
     }
 
     @Override
@@ -105,11 +87,14 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
                 selectStatement.bind()
                     .setString(ID, blobId.asString())
                     .setConsistencyLevel(ConsistencyLevel.ONE)
-                    .setReadTimeoutMillis(Math.toIntExact(cacheConfiguration.getTimeOut().toMillis()))
+                    .setReadTimeoutMillis(readTimeOutFromDataBase)
             )
-            .onErrorResume(Mono::error)
-            .map(row -> row.getBytes(DATA).array());
-
+            .map(row -> {
+                ByteBuffer byteBuffer = row.getBytes(DATA);
+                byte[] data = new byte[byteBuffer.remaining()];
+                byteBuffer.get(data);
+                return data;
+            });
     }
 
     @Override
@@ -137,15 +122,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
             insertInto(TABLE_NAME)
                 .value(ID, bindMarker(ID))
                 .value(DATA, bindMarker(DATA))
-                .using(ttl(bindMarker(TTL)))
+                .using(ttl(bindMarker(TTL_FOR_ROW)))
         );
-    }
-
-    private void closeInputStreamQuite(InputStream inputStream) {
-        try {
-            inputStream.close();
-        } catch (IOException e) {
-            // Ignore
-        }
     }
 }

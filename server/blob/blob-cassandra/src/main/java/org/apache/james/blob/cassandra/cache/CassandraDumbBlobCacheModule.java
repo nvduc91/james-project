@@ -29,7 +29,7 @@ import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 
 public interface CassandraDumbBlobCacheModule {
 
-    Double NO_READ_REPAIR = 0.0;
+    double NO_READ_REPAIR = 0d;
 
     CassandraModule MODULE = CassandraModule
         .builder()
@@ -39,8 +39,7 @@ public interface CassandraDumbBlobCacheModule {
                 .compactionWindowSize(1)
                 .compactionWindowUnit(HOURS))
             .readRepairChance(NO_READ_REPAIR))
-        .comment("Write through cache for small blobs stored in a slower blob store implementation which is object storage" +
-            "Messages` headers and bodies are stored as blobparts.")
+        .comment("Write through cache for small blobs stored in a slower blob store implementation.")
         .statement(statement -> statement
             .addPartitionKey(BlobTables.DumbBlobCache.ID, DataType.text())
             .addColumn(BlobTables.DumbBlobCache.DATA, DataType.blob()))

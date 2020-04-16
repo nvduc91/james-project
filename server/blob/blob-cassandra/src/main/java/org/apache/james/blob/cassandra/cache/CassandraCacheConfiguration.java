@@ -27,11 +27,11 @@ import com.google.common.base.Preconditions;
 public class CassandraCacheConfiguration {
 
     public static class Builder {
-        private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(50);
-        private static final Duration DEFAULT_TTL = Duration.ofSeconds(50);
-        private static final int DEFAULT_BYTE_THRESHOLD_SIZE = 8 * 1000;
+        private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(50);
+        private static final Duration DEFAULT_TTL = Duration.ofDays(7);
+        private static final int DEFAULT_BYTE_THRESHOLD_SIZE = 8 * 1024;
 
-        private Optional<Duration> timeout = Optional.empty();
+        private Optional<Duration> readTimeout = Optional.empty();
         private Optional<Integer> sizeThresholdInBytes = Optional.empty();
         private Optional<Duration> ttl = Optional.empty();
 
@@ -39,7 +39,7 @@ public class CassandraCacheConfiguration {
             Preconditions.checkNotNull(timeout, "'Threshold size' must not to be null");
             Preconditions.checkArgument(timeout.toMillis() > 0, "'Threshold size' needs to be positive");
 
-            this.timeout = Optional.of(timeout);
+            this.readTimeout = Optional.of(timeout);
             return this;
         }
 
@@ -61,24 +61,24 @@ public class CassandraCacheConfiguration {
 
         public CassandraCacheConfiguration build() {
             return new CassandraCacheConfiguration(
-                timeout.orElse(DEFAULT_TIMEOUT),
+                readTimeout.orElse(DEFAULT_READ_TIMEOUT),
                 sizeThresholdInBytes.orElse(DEFAULT_BYTE_THRESHOLD_SIZE),
                 ttl.orElse(DEFAULT_TTL));
         }
     }
 
-    private final Duration timeOut;
+    private final Duration readTimeOut;
     private final int sizeThresholdInBytes;
     private final Duration ttl;
 
     private CassandraCacheConfiguration(Duration timeout, int sizeThresholdInBytes, Duration ttl) {
-        this.timeOut = timeout;
+        this.readTimeOut = timeout;
         this.sizeThresholdInBytes = sizeThresholdInBytes;
         this.ttl = ttl;
     }
 
-    public Duration getTimeOut() {
-        return timeOut;
+    public Duration getReadTimeOut() {
+        return readTimeOut;
     }
 
     public Duration getTtl() {

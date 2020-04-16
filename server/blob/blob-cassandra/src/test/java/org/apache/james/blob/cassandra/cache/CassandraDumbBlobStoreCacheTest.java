@@ -19,7 +19,6 @@
 package org.apache.james.blob.cassandra.cache;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 import org.apache.james.backends.cassandra.CassandraCluster;
 import org.apache.james.backends.cassandra.CassandraClusterExtension;
@@ -33,7 +32,7 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     @RegisterExtension
     static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraDumbBlobCacheModule.MODULE);
 
-    private final Duration DEFAULT_TIME_OUT = Duration.of(50, ChronoUnit.MILLIS);
+    private final Duration DEFAULT_READ_TIMEOUT = Duration.ofDays(7);
     private final int DEFAULT_THRESHOLD_IN_BYTES = EIGHT_KILOBYTES.length;
     private final Duration _1_SEC_TTL = Duration.ofSeconds(1);
 
@@ -45,7 +44,7 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
         blobIdFactory = new HashBlobId.Factory();
         CassandraCacheConfiguration cacheConfiguration = new CassandraCacheConfiguration.Builder()
             .sizeThresholdInBytes(DEFAULT_THRESHOLD_IN_BYTES)
-            .timeOut(DEFAULT_TIME_OUT)
+            .timeOut(DEFAULT_READ_TIMEOUT)
             .ttl(_1_SEC_TTL)
             .build();
         testee = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfiguration);

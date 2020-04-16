@@ -51,7 +51,7 @@ public class CassandraCacheConfigurationTest {
             .build();
 
         SoftAssertions.assertSoftly(soflty -> {
-            assertThat(cacheConfiguration.getTimeOut()).isEqualTo(DEFAULT_TIME_OUT);
+            assertThat(cacheConfiguration.getReadTimeOut()).isEqualTo(DEFAULT_TIME_OUT);
             assertThat(cacheConfiguration.getSizeThresholdInBytes()).isEqualTo(DEFAULT_THRESHOLD_SIZE_IN_BYTES);
             assertThat(cacheConfiguration.getTtl()).isEqualTo(_1_SEC_TTL);
         });

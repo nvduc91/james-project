@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 
-import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
@@ -36,8 +35,7 @@ import reactor.core.publisher.Mono;
 
 public interface DumbBlobStoreCacheContract {
 
-    byte[] EIGHT_KILOBYTES = Strings.repeat("01234567\n", 1000).getBytes(StandardCharsets.UTF_8);
-    byte[] TWELVE_MEGABYTES = Strings.repeat("0123456789\r\n", 1024 * 1024).getBytes(StandardCharsets.UTF_8);
+    byte[] EIGHT_KILOBYTES = Strings.repeat("01234567\n", 1024).getBytes(StandardCharsets.UTF_8);
 
     DumbBlobStoreCache testee();
 
@@ -51,36 +49,6 @@ public interface DumbBlobStoreCacheContract {
 
         byte[] actual = Mono.from(testee().read(blobId)).block();
         assertThat(actual).containsExactly(EIGHT_KILOBYTES);
-    }
-
-    @Test
-    default void shouldNotSaveWhenCacheBigByteData() {
-        BlobId blobId = blobIdFactory().randomId();
-        assertThatCode(Mono.from(testee().cache(blobId, TWELVE_MEGABYTES))::block)
-            .doesNotThrowAnyException();
-
-        Optional<byte[]> actual = Mono.from(testee().read(blobId)).blockOptional();
-        assertThat(actual).isEmpty();
-    }
-
-    @Test
-    default void shouldSaveWhenCacheSmallInputStreamData() {
-        BlobId blobId = blobIdFactory().randomId();
-        assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(EIGHT_KILOBYTES)))::block)
-            .doesNotThrowAnyException();
-
-        byte[] actual = Mono.from(testee().read(blobId)).block();
-        assertThat(actual).containsExactly(EIGHT_KILOBYTES);
-    }
-
-    @Test
-    default void shouldNotSaveWhenCacheBigInputStreamData() {
-        BlobId blobId = blobIdFactory().randomId();
-        assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(TWELVE_MEGABYTES)))::block)
-            .doesNotThrowAnyException();
-
-        Optional<byte[]> actual = Mono.from(testee().read(blobId)).blockOptional();
-        assertThat(actual).isEmpty();
     }
 
     @Test
@@ -122,9 +90,9 @@ public interface DumbBlobStoreCacheContract {
     }
 
     @Test
-    default void shouldReturnDataWhenCacheSmallInputStreamDataInConfigurationTTL() {
+    default void shouldReturnDataWhenCacheSmallDataInConfigurationTTL() {
         BlobId blobId = blobIdFactory().randomId();
-        assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(EIGHT_KILOBYTES)))::block)
+        assertThatCode(Mono.from(testee().cache(blobId, EIGHT_KILOBYTES))::block)
             .doesNotThrowAnyException();
 
         await().atMost(Duration.ONE_SECOND).await().untilAsserted(()
@@ -134,7 +102,7 @@ public interface DumbBlobStoreCacheContract {
     @Test
     default void shouldNotReturnDataWhenCachedSmallDataOutOfConfigurationTTL() {
         BlobId blobId = blobIdFactory().randomId();
-        assertThatCode(Mono.from(testee().cache(blobId, new ByteArrayInputStream(EIGHT_KILOBYTES)))::block)
+        assertThatCode(Mono.from(testee().cache(blobId, EIGHT_KILOBYTES))::block)
             .doesNotThrowAnyException();
 
         await().atMost(Duration.TWO_SECONDS).await().untilAsserted(()
