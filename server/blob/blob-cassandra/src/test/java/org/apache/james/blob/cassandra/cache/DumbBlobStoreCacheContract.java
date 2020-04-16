@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 
 public interface DumbBlobStoreCacheContract {
 
-    byte[] EIGHT_KILOBYTES = Strings.repeat("01234567\n", 1024).getBytes(StandardCharsets.UTF_8);
+    byte[] EIGHT_KILOBYTES = Strings.repeat("0123456\n", 1000).getBytes(StandardCharsets.UTF_8);
 
     DumbBlobStoreCache testee();
 
@@ -64,7 +64,6 @@ public interface DumbBlobStoreCacheContract {
     default void shouldReturnEmptyWhenReadWithTimeOut() {
         BlobId blobId = blobIdFactory().randomId();
         Mono.from(testee().cache(blobId, EIGHT_KILOBYTES)).block();
-
     }
 
     @Test
