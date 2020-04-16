@@ -94,7 +94,7 @@ public class CachedDumbBlobStore implements DumbBlobStore {
     @Override
     public Publisher<Void> save(BucketName bucketName, BlobId blobId, InputStream inputStream) {
         return Mono.from(backend.save(bucketName, blobId, inputStream))
-            .then(Mono.just(inputStream)
+            .then(Mono.fromCallable(() -> new PushbackInputStream(inputStream))
                 .flatMap(stream -> handleCache(bucketName, blobId, stream)));
     }
 
@@ -102,6 +102,7 @@ public class CachedDumbBlobStore implements DumbBlobStore {
     public Publisher<Void> save(BucketName bucketName, BlobId blobId, ByteSource content) {
         return Mono.from(backend.save(bucketName, blobId, content))
             .then(Mono.fromCallable(content::openBufferedStream)
+                .map(PushbackInputStream::new)
                 .flatMap(stream -> handleCache(bucketName, blobId, stream)));
     }
 
@@ -124,10 +125,9 @@ public class CachedDumbBlobStore implements DumbBlobStore {
                 ).then());
     }
 
-    private Mono<Void> handleCache(BucketName bucketName, BlobId blobId, InputStream inputStream) {
+    private Mono<Void> handleCache(BucketName bucketName, BlobId blobId, PushbackInputStream pushbackInputStream) {
         return Mono.fromCallable(() -> {
             byte[] bytes = new byte[sizeThresholdInBytes + 1];
-            PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream);
             int read = pushbackInputStream.read(bytes);
             pushbackInputStream.unread(read);
             return bytes;
