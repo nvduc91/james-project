@@ -28,6 +28,7 @@ public class CassandraCacheConfiguration {
 
     public static class Builder {
         private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(50);
+        private static final Duration MAX_READ_TIMEOUT = Duration.ofHours(1);
         private static final Duration DEFAULT_TTL = Duration.ofDays(7);
         private static final int DEFAULT_BYTE_THRESHOLD_SIZE = 8 * 1024;
 
@@ -36,8 +37,10 @@ public class CassandraCacheConfiguration {
         private Optional<Duration> ttl = Optional.empty();
 
         public Builder timeOut(Duration timeout) {
-            Preconditions.checkNotNull(timeout, "'Threshold size' must not to be null");
-            Preconditions.checkArgument(timeout.toMillis() > 0, "'Threshold size' needs to be positive");
+            Preconditions.checkNotNull(timeout, "'Read timeout' must not to be null");
+            Preconditions.checkArgument(timeout.getSeconds() > 0, "'Read timeout' needs to be positive");
+            Preconditions.checkArgument(timeout.getSeconds() <= MAX_READ_TIMEOUT.getSeconds(),
+                "'Read timeout' needs to be less than %s sec", MAX_READ_TIMEOUT.getSeconds());
 
             this.readTimeout = Optional.of(timeout);
             return this;
@@ -53,7 +56,8 @@ public class CassandraCacheConfiguration {
         public Builder ttl(Duration ttl) {
             Preconditions.checkNotNull(ttl, "'TTL' must not to be null");
             Preconditions.checkArgument(ttl.getSeconds() > 0, "'TTL' needs to be positive");
-            Preconditions.checkArgument(ttl.getSeconds() < Integer.MAX_VALUE, "'TTL' must not greater than %s", Integer.MAX_VALUE);
+            Preconditions.checkArgument(ttl.getSeconds() < Integer.MAX_VALUE,
+                "'TTL' must not greater than %s", Integer.MAX_VALUE);
 
             this.ttl = Optional.of(ttl);
             return this;

@@ -19,6 +19,8 @@
 
 package org.apache.james.blob.cassandra.cache;
 
+import static com.datastax.driver.core.ConsistencyLevel.ALL;
+import static com.datastax.driver.core.ConsistencyLevel.ONE;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
@@ -36,10 +38,9 @@ import javax.inject.Inject;
 
 import org.apache.james.backends.cassandra.utils.CassandraAsyncExecutor;
 import org.apache.james.blob.api.BlobId;
-import org.reactivestreams.Publisher;
 
-import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 import reactor.core.publisher.Mono;
@@ -61,46 +62,54 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
         this.selectStatement = prepareSelect(session);
         this.deleteStatement = prepareDelete(session);
 
-        this.readTimeOutFromDataBase = (int) cacheConfiguration.getReadTimeOut().toMillis();
-        this.timeToLive = (int) cacheConfiguration.getTtl().getSeconds();
+        this.readTimeOutFromDataBase = Math.toIntExact(cacheConfiguration.getReadTimeOut().toMillis());
+        this.timeToLive = Math.toIntExact(cacheConfiguration.getTtl().getSeconds());
     }
 
     @Override
-    public Publisher<Void> cache(BlobId blobId, byte[] bytes) {
+    public Mono<Void> cache(BlobId blobId, byte[] bytes) {
         return Mono.just(bytes)
-            .flatMap(data -> Mono.from(save(blobId, ByteBuffer.wrap(data, 0, data.length))));
+            .flatMap(data -> save(blobId, toByteBuffer(data)));
     }
 
-    private Publisher<Void> save(BlobId blobId, ByteBuffer data) {
+    @Override
+    public Mono<byte[]> read(BlobId blobId) {
+        return cassandraAsyncExecutor
+            .executeSingleRow(
+                selectStatement.bind()
+                    .setString(ID, blobId.asString())
+                    .setConsistencyLevel(ONE)
+                    .setReadTimeoutMillis(readTimeOutFromDataBase)
+            )
+            .map(this::toByteArray);
+    }
+
+    @Override
+    public Mono<Void> remove(BlobId blobId) {
+        return cassandraAsyncExecutor.executeVoid(
+            deleteStatement.bind()
+                .setString(ID, blobId.asString())
+                .setConsistencyLevel(ALL));
+    }
+
+    private Mono<Void> save(BlobId blobId, ByteBuffer data) {
         return cassandraAsyncExecutor.executeVoid(
             insertStatement.bind()
                 .setString(ID, blobId.asString())
                 .setBytes(DATA, data)
                 .setInt(TTL_FOR_ROW, timeToLive)
-                .setConsistencyLevel(ConsistencyLevel.ONE));
+                .setConsistencyLevel(ONE));
     }
 
-    @Override
-    public Publisher<byte[]> read(BlobId blobId) {
-        return cassandraAsyncExecutor
-            .executeSingleRow(
-                selectStatement.bind()
-                    .setString(ID, blobId.asString())
-                    .setConsistencyLevel(ConsistencyLevel.ONE)
-                    .setReadTimeoutMillis(readTimeOutFromDataBase)
-            )
-            .map(row -> {
-                ByteBuffer byteBuffer = row.getBytes(DATA);
-                byte[] data = new byte[byteBuffer.remaining()];
-                byteBuffer.get(data);
-                return data;
-            });
+    private ByteBuffer toByteBuffer(byte[] bytes) {
+        return ByteBuffer.wrap(bytes, 0, bytes.length);
     }
 
-    @Override
-    public Publisher<Void> remove(BlobId blobId) {
-        return cassandraAsyncExecutor.executeVoid(
-            deleteStatement.bind().setString(ID, blobId.asString()));
+    private byte[] toByteArray(Row row) {
+        ByteBuffer byteBuffer = row.getBytes(DATA);
+        byte[] data = new byte[byteBuffer.remaining()];
+        byteBuffer.get(data);
+        return data;
     }
 
     private PreparedStatement prepareDelete(Session session) {
