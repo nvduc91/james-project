@@ -68,8 +68,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
 
     @Override
     public Mono<Void> cache(BlobId blobId, byte[] bytes) {
-        return Mono.just(bytes)
-            .flatMap(data -> save(blobId, toByteBuffer(data)));
+        return save(blobId, toByteBuffer(bytes));
     }
 
     @Override
