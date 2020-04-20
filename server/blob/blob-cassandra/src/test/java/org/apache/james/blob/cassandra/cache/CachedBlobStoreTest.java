@@ -18,25 +18,26 @@
  ****************************************************************/
 package org.apache.james.blob.cassandra.cache;
 
+import static org.apache.james.blob.api.BlobStore.StoragePolicy.SIZE_BASED;
 import static org.apache.james.blob.api.BucketName.DEFAULT;
 import static org.apache.james.blob.api.DumbBlobStoreFixture.TEST_BLOB_ID;
-import static org.apache.james.blob.api.DumbBlobStoreFixture.TWELVE_MEGABYTES;
 import static org.apache.james.blob.cassandra.cache.DumbBlobStoreCacheContract.EIGHT_KILOBYTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.nio.charset.StandardCharsets;
-
 import org.apache.james.backends.cassandra.CassandraCluster;
 import org.apache.james.backends.cassandra.CassandraClusterExtension;
 import org.apache.james.backends.cassandra.init.configuration.CassandraConfiguration;
+import org.apache.james.blob.api.BlobId;
+import org.apache.james.blob.api.BlobStore;
+import org.apache.james.blob.api.BlobStoreContract;
 import org.apache.james.blob.api.BucketName;
 import org.apache.james.blob.api.DumbBlobStore;
-import org.apache.james.blob.api.DumbBlobStoreContract;
 import org.apache.james.blob.api.HashBlobId;
 import org.apache.james.blob.api.ObjectNotFoundException;
 import org.apache.james.blob.cassandra.CassandraBlobModule;
+import org.apache.james.blob.cassandra.CassandraBlobStore;
 import org.apache.james.blob.cassandra.CassandraBucketDAO;
 import org.apache.james.blob.cassandra.CassandraDefaultBucketDAO;
 import org.apache.james.blob.cassandra.CassandraDumbBlobStore;
@@ -45,11 +46,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.google.common.base.Strings;
-
 import reactor.core.publisher.Mono;
 
-public class CachedDumbBlobStoreTest implements DumbBlobStoreContract {
+public class CachedBlobStoreTest implements BlobStoreContract {
 
     private static final int CHUNK_SIZE = 10240;
     private static final BucketName DEFAULT_BUCKERNAME = DEFAULT;
@@ -63,84 +62,77 @@ public class CachedDumbBlobStoreTest implements DumbBlobStoreContract {
     @RegisterExtension
     static CassandraClusterExtension cassandraCluster = initCassandraClusterExtension();
 
-    private DumbBlobStore testee;
-    private CassandraDefaultBucketDAO defaultBucketDAO;
-    private DumbBlobStore backend;
+    private BlobStore testee;
+    private BlobStore backend;
     private DumbBlobStoreCache cached;
 
     @BeforeEach
     void setUp(CassandraCluster cassandra) {
-        HashBlobId.Factory blobIdFactory = new HashBlobId.Factory();
-        CassandraBucketDAO bucketDAO = new CassandraBucketDAO(blobIdFactory, cassandra.getConf());
-        defaultBucketDAO = new CassandraDefaultBucketDAO(cassandra.getConf());
-        backend = new CassandraDumbBlobStore(
-            defaultBucketDAO,
-            bucketDAO,
-            CassandraConfiguration.builder()
-                .blobPartSize(CHUNK_SIZE)
-                .build(),
-            DEFAULT);
-        CassandraCacheConfiguration cacheConfig = new CassandraCacheConfiguration.Builder().build();
+        backend = CassandraBlobStore.forTesting(cassandra.getConf());
+        CassandraCacheConfiguration cacheConfig = new CassandraCacheConfiguration.Builder()
+            .sizeThresholdInBytes(EIGHT_KILOBYTES.length +1)
+            .build();
         cached = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfig);
-        testee = new CachedDumbBlobStore(cached, backend, cacheConfig, bucketDAO, DEFAULT);
+        testee = new CachedBlobStore(cached, backend, cacheConfig, DEFAULT);
     }
 
     @Override
-    public DumbBlobStore testee() {
+    public BlobStore testee() {
         return testee;
+    }
+
+    @Override
+    public BlobId.Factory blobIdFactory() {
+        return new HashBlobId.Factory();
     }
 
     @Test
     public void shouldCacheWhenDefaultBucketName() {
-        assertThatCode(Mono.from(testee().save(DEFAULT_BUCKERNAME, TEST_BLOB_ID, EIGHT_KILOBYTES))::block)
-            .doesNotThrowAnyException();
+        BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
-        byte[] actual = Mono.from(cached.read(TEST_BLOB_ID)).block();
+        byte[] actual = Mono.from(cached.read(blobId)).block();
         assertThat(actual).containsExactly(EIGHT_KILOBYTES);
     }
 
     @Test
     public void shouldNotCacheWhenNotDefaultBucketName() {
-        assertThatCode(Mono.from(testee().save(TEST_BUCKERNAME, TEST_BLOB_ID, EIGHT_KILOBYTES))::block)
-            .doesNotThrowAnyException();
+        BlobId blobId = Mono.from(testee().save(TEST_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(ignored -> {
-            assertThat(Mono.from(cached.read(TEST_BLOB_ID)).blockOptional()).isEmpty();
-            assertThat(Mono.from(backend.readBytes(TEST_BUCKERNAME, TEST_BLOB_ID)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(backend.readBytes(TEST_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
 
     @Test
     public void shouldNotCacheWhenDefaultBucketNameAndBigByteData() {
-        assertThatCode(Mono.from(testee().save(DEFAULT_BUCKERNAME, TEST_BLOB_ID, TWELVE_MEGABYTES))::block)
-            .doesNotThrowAnyException();
+        BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, TWELVE_MEGABYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(ignored -> {
-            assertThat(Mono.from(cached.read(TEST_BLOB_ID)).blockOptional()).isEmpty();
-            assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, TEST_BLOB_ID)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(TWELVE_MEGABYTES);
         });
     }
 
     @Test
-    public void shouldSavedBothInCacheAndCassandra() {
-        assertThatCode(Mono.from(testee().save(DEFAULT_BUCKERNAME, TEST_BLOB_ID, EIGHT_KILOBYTES))::block)
-            .doesNotThrowAnyException();
+    public void shouldSavedBothInCacheAndBackend() {
+        BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(soflty -> {
-            assertThat(Mono.from(cached.read(TEST_BLOB_ID)).block()).containsExactly(EIGHT_KILOBYTES);
-            assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, TEST_BLOB_ID)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(cached.read(blobId)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
 
     @Test
-    public void shouldRemoveBothInCacheAndCassandraWhenDefaultBucketName() {
+    public void shouldRemoveBothInCacheAndBackendWhenDefaultBucketName() {
+        BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
+
         SoftAssertions.assertSoftly(ignored -> {
-            assertThatCode(Mono.from(testee().save(DEFAULT_BUCKERNAME, TEST_BLOB_ID, EIGHT_KILOBYTES))::block)
+            assertThatCode(Mono.from(testee().delete(DEFAULT_BUCKERNAME, blobId))::block)
                 .doesNotThrowAnyException();
-            assertThatCode(Mono.from(testee().delete(DEFAULT_BUCKERNAME, TEST_BLOB_ID))::block)
-                .doesNotThrowAnyException();
-            assertThat(Mono.from(cached.read(TEST_BLOB_ID)).blockOptional()).isEmpty();
-            assertThatThrownBy(() -> Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, TEST_BLOB_ID)).block())
+            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThatThrownBy(() -> Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block())
                 .isInstanceOf(ObjectNotFoundException.class);
         });
     }
