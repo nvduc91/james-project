@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContract {
 
     @RegisterExtension
-    static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraDumbBlobCacheModule.MODULE);
+    static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraBlobCacheModule.MODULE);
 
     private final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(50);
     private final int DEFAULT_THRESHOLD_IN_BYTES = EIGHT_KILOBYTES.length;
