@@ -32,7 +32,7 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     @RegisterExtension
     static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraDumbBlobCacheModule.MODULE);
 
-    private final Duration DEFAULT_READ_TIMEOUT = Duration.ofDays(7);
+    private final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(50);
     private final int DEFAULT_THRESHOLD_IN_BYTES = EIGHT_KILOBYTES.length;
     private final Duration _1_SEC_TTL = Duration.ofSeconds(1);
 
