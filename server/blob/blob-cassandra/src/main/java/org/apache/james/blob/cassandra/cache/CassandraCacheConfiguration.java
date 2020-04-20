@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 public class CassandraCacheConfiguration {
 
     public static class Builder {
-        private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(50);
+        private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofMillis(100);
         private static final Duration MAX_READ_TIMEOUT = Duration.ofHours(1);
         private static final Duration DEFAULT_TTL = Duration.ofDays(7);
         private static final int DEFAULT_BYTE_THRESHOLD_SIZE = 8 * 1024;
@@ -57,7 +57,7 @@ public class CassandraCacheConfiguration {
             Preconditions.checkNotNull(ttl, "'TTL' must not to be null");
             Preconditions.checkArgument(ttl.getSeconds() > 0, "'TTL' needs to be positive");
             Preconditions.checkArgument(ttl.getSeconds() < Integer.MAX_VALUE,
-                "'TTL' must not greater than %s", Integer.MAX_VALUE);
+                "'TTL' must not greater than %s sec", Integer.MAX_VALUE);
 
             this.ttl = Optional.of(ttl);
             return this;
