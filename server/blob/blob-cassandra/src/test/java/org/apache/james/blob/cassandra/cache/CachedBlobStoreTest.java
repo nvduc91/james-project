@@ -59,7 +59,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
 
     private BlobStore testee;
     private BlobStore backend;
-    private DumbBlobStoreCache cached;
+    private DumbBlobStoreCache cache;
 
     @BeforeEach
     void setUp(CassandraCluster cassandra) {
@@ -67,8 +67,8 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         CassandraCacheConfiguration cacheConfig = new CassandraCacheConfiguration.Builder()
             .sizeThresholdInBytes(EIGHT_KILOBYTES.length + 1)
             .build();
-        cached = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfig);
-        testee = new CachedBlobStore(cached, backend, cacheConfig, DEFAULT);
+        cache = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfig);
+        testee = new CachedBlobStore(cache, backend, cacheConfig, DEFAULT);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
     public void shouldCacheWhenDefaultBucketName() {
         BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
-        byte[] actual = Mono.from(cached.read(blobId)).block();
+        byte[] actual = Mono.from(cache.read(blobId)).block();
         assertThat(actual).containsExactly(EIGHT_KILOBYTES);
     }
 
@@ -94,7 +94,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         BlobId blobId = Mono.from(testee().save(TEST_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(ignored -> {
-            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
             assertThat(Mono.from(backend.readBytes(TEST_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
@@ -104,7 +104,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, TWELVE_MEGABYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(ignored -> {
-            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
             assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(TWELVE_MEGABYTES);
         });
     }
@@ -114,7 +114,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(soflty -> {
-            assertThat(Mono.from(cached.read(blobId)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(cache.read(blobId)).block()).containsExactly(EIGHT_KILOBYTES);
             assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
@@ -124,7 +124,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, HIGH_PERFORMANCE)).block();
 
         SoftAssertions.assertSoftly(soflty -> {
-            assertThat(Mono.from(cached.read(blobId)).block()).containsExactly(EIGHT_KILOBYTES);
+            assertThat(Mono.from(cache.read(blobId)).block()).containsExactly(EIGHT_KILOBYTES);
             assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
@@ -134,7 +134,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, EIGHT_KILOBYTES, LOW_COST)).block();
 
         SoftAssertions.assertSoftly(soflty -> {
-            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
             assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
         });
     }
@@ -146,7 +146,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         SoftAssertions.assertSoftly(ignored -> {
             assertThatCode(Mono.from(testee().delete(DEFAULT_BUCKERNAME, blobId))::block)
                 .doesNotThrowAnyException();
-            assertThat(Mono.from(cached.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
             assertThatThrownBy(() -> Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block())
                 .isInstanceOf(ObjectNotFoundException.class);
         });

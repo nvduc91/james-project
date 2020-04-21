@@ -20,12 +20,11 @@
 package org.apache.james.blob.cassandra.cache;
 
 import static com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit.HOURS;
-import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.DATA;
-import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.ID;
-import static org.apache.james.blob.cassandra.BlobTables.DumbBlobCache.TABLE_NAME;
+import static org.apache.james.blob.cassandra.BlobTables.BlobStoreCache.DATA;
+import static org.apache.james.blob.cassandra.BlobTables.BlobStoreCache.ID;
+import static org.apache.james.blob.cassandra.BlobTables.BlobStoreCache.TABLE_NAME;
 
 import org.apache.james.backends.cassandra.components.CassandraModule;
-import org.apache.james.blob.cassandra.BlobTables;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
