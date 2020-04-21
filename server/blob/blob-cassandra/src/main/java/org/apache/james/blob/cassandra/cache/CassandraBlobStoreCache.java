@@ -46,7 +46,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import reactor.core.publisher.Mono;
 
-public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
+public class CassandraBlobStoreCache implements BlobStoreCache {
 
     private final CassandraAsyncExecutor cassandraAsyncExecutor;
     private final PreparedStatement insertStatement;
@@ -58,7 +58,7 @@ public class CassandraDumbBlobStoreCache implements DumbBlobStoreCache {
 
     @Inject
     @VisibleForTesting
-    CassandraDumbBlobStoreCache(Session session, CassandraCacheConfiguration cacheConfiguration) {
+    CassandraBlobStoreCache(Session session, CassandraCacheConfiguration cacheConfiguration) {
         this.cassandraAsyncExecutor = new CassandraAsyncExecutor(session);
         this.insertStatement = prepareInsert(session);
         this.selectStatement = prepareSelect(session);

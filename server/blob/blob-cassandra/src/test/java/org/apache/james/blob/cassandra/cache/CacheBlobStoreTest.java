@@ -22,13 +22,16 @@ import static org.apache.james.blob.api.BlobStore.StoragePolicy.HIGH_PERFORMANCE
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.LOW_COST;
 import static org.apache.james.blob.api.BlobStore.StoragePolicy.SIZE_BASED;
 import static org.apache.james.blob.api.BucketName.DEFAULT;
-import static org.apache.james.blob.cassandra.cache.DumbBlobStoreCacheContract.EIGHT_KILOBYTES;
+import static org.apache.james.blob.cassandra.cache.BlobStoreCacheContract.EIGHT_KILOBYTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.ByteArrayInputStream;
+
 import org.apache.james.backends.cassandra.CassandraCluster;
 import org.apache.james.backends.cassandra.CassandraClusterExtension;
+import org.apache.james.backends.cassandra.components.CassandraModule;
 import org.apache.james.blob.api.BlobId;
 import org.apache.james.blob.api.BlobStore;
 import org.apache.james.blob.api.BlobStoreContract;
@@ -44,22 +47,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import reactor.core.publisher.Mono;
 
-public class CachedBlobStoreTest implements BlobStoreContract {
+public class CacheBlobStoreTest implements BlobStoreContract {
 
     private static final BucketName DEFAULT_BUCKERNAME = DEFAULT;
     private static final BucketName TEST_BUCKERNAME = BucketName.of("test");
 
-    private static CassandraClusterExtension initCassandraClusterExtension() {
-        new CassandraClusterExtension(CassandraBlobCacheModule.MODULE);
-        return new CassandraClusterExtension(CassandraBlobModule.MODULE);
-    }
-
     @RegisterExtension
-    static CassandraClusterExtension cassandraCluster = initCassandraClusterExtension();
+    static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(
+        CassandraModule.aggregateModules(CassandraBlobModule.MODULE, CassandraBlobCacheModule.MODULE));
 
     private BlobStore testee;
     private BlobStore backend;
-    private DumbBlobStoreCache cache;
+    private BlobStoreCache cache;
 
     @BeforeEach
     void setUp(CassandraCluster cassandra) {
@@ -67,8 +66,8 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         CassandraCacheConfiguration cacheConfig = new CassandraCacheConfiguration.Builder()
             .sizeThresholdInBytes(EIGHT_KILOBYTES.length + 1)
             .build();
-        cache = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfig);
-        testee = new CachedBlobStore(cache, backend, cacheConfig, DEFAULT);
+        cache = new CassandraBlobStoreCache(cassandra.getConf(), cacheConfig);
+        testee = new CacheBlobStore(cache, backend, cacheConfig, DEFAULT);
     }
 
     @Override
@@ -136,6 +135,16 @@ public class CachedBlobStoreTest implements BlobStoreContract {
         SoftAssertions.assertSoftly(soflty -> {
             assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
             assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EIGHT_KILOBYTES);
+        });
+    }
+
+    @Test
+    public void shouldNotCacheWhenEmptyStream() {
+        BlobId blobId = Mono.from(testee().save(DEFAULT_BUCKERNAME, new ByteArrayInputStream(EMPTY_BYTEARRAY), SIZE_BASED)).block();
+
+        SoftAssertions.assertSoftly(soflty -> {
+            assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
+            assertThat(Mono.from(backend.readBytes(DEFAULT_BUCKERNAME, blobId)).block()).containsExactly(EMPTY_BYTEARRAY);
         });
     }
 

@@ -27,7 +27,7 @@ import org.apache.james.blob.api.HashBlobId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContract {
+public class CassandraBlobStoreCacheTest implements BlobStoreCacheContract {
 
     @RegisterExtension
     static CassandraClusterExtension cassandraCluster = new CassandraClusterExtension(CassandraBlobCacheModule.MODULE);
@@ -36,7 +36,7 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
     private final int DEFAULT_THRESHOLD_IN_BYTES = EIGHT_KILOBYTES.length;
     private final Duration _2_SEC_TTL = Duration.ofSeconds(2);
 
-    private DumbBlobStoreCache testee;
+    private BlobStoreCache testee;
     private HashBlobId.Factory blobIdFactory;
 
     @BeforeEach
@@ -47,11 +47,11 @@ public class CassandraDumbBlobStoreCacheTest implements DumbBlobStoreCacheContra
             .timeOut(DEFAULT_READ_TIMEOUT)
             .ttl(_2_SEC_TTL)
             .build();
-        testee = new CassandraDumbBlobStoreCache(cassandra.getConf(), cacheConfiguration);
+        testee = new CassandraBlobStoreCache(cassandra.getConf(), cacheConfiguration);
     }
 
     @Override
-    public DumbBlobStoreCache testee() {
+    public BlobStoreCache testee() {
         return testee;
     }
 

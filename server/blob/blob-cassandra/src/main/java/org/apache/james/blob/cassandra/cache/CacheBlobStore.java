@@ -40,19 +40,19 @@ import com.google.common.base.Preconditions;
 
 import reactor.core.publisher.Mono;
 
-public class CachedBlobStore implements BlobStore {
+public class CacheBlobStore implements BlobStore {
 
     private static final String DEFAULT_BUCKET = "cassandraDefault";
 
-    private final DumbBlobStoreCache cache;
+    private final BlobStoreCache cache;
     private final BlobStore backend;
     private final Integer sizeThresholdInBytes;
     private final BucketName defaultBucket;
 
     @Inject
-    public CachedBlobStore(DumbBlobStoreCache cache, BlobStore backend,
-                           CassandraCacheConfiguration cacheConfiguration,
-                           @Named(DEFAULT_BUCKET) BucketName defaultBucket) {
+    public CacheBlobStore(BlobStoreCache cache, BlobStore backend,
+                          CassandraCacheConfiguration cacheConfiguration,
+                          @Named(DEFAULT_BUCKET) BucketName defaultBucket) {
         this.cache = cache;
         this.backend = backend;
         this.sizeThresholdInBytes = cacheConfiguration.getSizeThresholdInBytes();
@@ -63,7 +63,8 @@ public class CachedBlobStore implements BlobStore {
     public InputStream read(BucketName bucketName, BlobId blobId) throws ObjectStoreIOException, ObjectNotFoundException {
         Preconditions.checkNotNull(bucketName, "bucketName should not be null");
 
-        return isDefaultBucketName(bucketName)
+        return Mono.just(bucketName)
+            .filter(defaultBucket::equals)
             .flatMap(ignored ->
                 Mono.from(cache.read(blobId))
                     .<InputStream>flatMap(bytes -> Mono.fromCallable(() -> new ByteArrayInputStream(bytes)))
@@ -75,7 +76,8 @@ public class CachedBlobStore implements BlobStore {
 
     @Override
     public Mono<byte[]> readBytes(BucketName bucketName, BlobId blobId) {
-        return isDefaultBucketName(bucketName)
+        return Mono.just(bucketName)
+            .filter(defaultBucket::equals)
             .flatMap(ignored -> Mono.from(cache.read(blobId)))
             .switchIfEmpty(Mono.from(backend.readBytes(bucketName, blobId)));
     }
@@ -117,7 +119,8 @@ public class CachedBlobStore implements BlobStore {
     @Override
     public Mono<Void> delete(BucketName bucketName, BlobId blobId) {
         return Mono.from(backend.delete(bucketName, blobId))
-            .then(isDefaultBucketName(bucketName)
+            .then(Mono.just(bucketName)
+                .filter(defaultBucket::equals)
                 .flatMap(ignored -> Mono.from(cache.remove(blobId)))
                 .then());
     }
@@ -125,11 +128,6 @@ public class CachedBlobStore implements BlobStore {
     @Override
     public Publisher<Void> deleteBucket(BucketName bucketName) {
         return Mono.from(backend.deleteBucket(bucketName));
-    }
-
-    private Mono<BucketName> isDefaultBucketName(BucketName bucketName) {
-        return Mono.just(bucketName)
-            .filter(defaultBucket::equals);
     }
 
     private Mono<Void> saveInCache(BucketName bucketName, BlobId blobId, PushbackInputStream pushbackInputStream, StoragePolicy storagePolicy) {
@@ -153,8 +151,8 @@ public class CachedBlobStore implements BlobStore {
     }
 
     /**
-    * bytes: byte[] from PushbackInputStream.If PushbackInputStream is empty bytes.length == 1
-    */
+     * bytes: byte[] from PushbackInputStream.If PushbackInputStream is empty bytes.length == 1
+     */
     private boolean isAbleToCache(BucketName bucketName, byte[] bytes, StoragePolicy storagePolicy) {
         return isAbleToCache(bucketName, storagePolicy) && bytes.length <= sizeThresholdInBytes && bytes.length > 1;
     }
