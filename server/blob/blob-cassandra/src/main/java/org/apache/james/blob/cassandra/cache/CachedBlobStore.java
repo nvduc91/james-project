@@ -68,8 +68,12 @@ public class CachedBlobStore implements BlobStore {
     @Override
     public Mono<byte[]> readBytes(BucketName bucketName, BlobId blobId) {
         return Mono.just(bucketName)
-            .filter(backend.getDefaultBucketName()::equals)
-            .flatMap(ignored -> Mono.from(cache.read(blobId)))
+            .filter(getDefaultBucketName()::equals)
+            .flatMap(ignored -> Mono.from(cache.read(blobId))
+                .switchIfEmpty(Mono.from(backend.readBytes(bucketName, blobId))
+                    .filter(this::isAbleToCache)
+                    .flatMap(bytes -> saveInCache(blobId, bytes)
+                        .then(Mono.just(bytes)))))
             .switchIfEmpty(Mono.from(backend.readBytes(bucketName, blobId)));
     }
 
@@ -78,7 +82,7 @@ public class CachedBlobStore implements BlobStore {
         return Mono.from(backend.save(bucketName, bytes, storagePolicy))
             .flatMap(blobId -> {
                 if (isAbleToCache(bucketName, bytes, storagePolicy)) {
-                    return Mono.from(cache.cache(blobId, bytes)).thenReturn(blobId);
+                    return saveInCache(blobId, bytes).thenReturn(blobId);
                 }
                 return Mono.just(blobId);
             });
@@ -93,18 +97,6 @@ public class CachedBlobStore implements BlobStore {
         }
 
         return backend.save(bucketName, inputStream, storagePolicy);
-    }
-
-    private Publisher<BlobId> saveInCache(BucketName bucketName, InputStream inputStream, StoragePolicy storagePolicy) {
-        PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, sizeThresholdInBytes);
-
-        return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
-            .flatMap(Mono::justOrEmpty)
-            .filter(bytes -> isAbleToCache(bucketName, bytes, storagePolicy))
-            .flatMap(bytes -> Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy))
-                .flatMap(blobId -> Mono.from(cache.cache(blobId, bytes))
-                    .thenReturn(blobId)))
-            .switchIfEmpty(Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy)));
     }
 
     @Override
@@ -148,11 +140,50 @@ public class CachedBlobStore implements BlobStore {
         }
     }
 
+    private Publisher<BlobId> saveInCache(BucketName bucketName, InputStream inputStream, StoragePolicy storagePolicy) {
+        PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, sizeThresholdInBytes + 1);
+
+        return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
+            .flatMap(Mono::justOrEmpty)
+            .filter(bytes -> isAbleToCache(bucketName, bytes, storagePolicy))
+            .flatMap(bytes -> Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy))
+                .flatMap(blobId -> saveInCache(blobId, bytes).thenReturn(blobId)))
+            .switchIfEmpty(Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy)));
+    }
+
+    private Mono<Void> saveInCache(BlobId blobId, byte[] bytes) {
+        return Mono.from(cache.cache(blobId, bytes));
+    }
+
+    private Mono<InputStream> saveInCache(PushbackInputStream pushbackInputStream, BlobId blobId) {
+        return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
+            .flatMap(Mono::justOrEmpty)
+            .filter(this::isAbleToCache)
+            .flatMap(bytes -> Mono.from(cache.cache(blobId, bytes)).then(Mono.just(bytes)))
+            .then(Mono.just(pushbackInputStream));
+    }
+
     private boolean isAbleToCache(BucketName bucketName, byte[] bytes, StoragePolicy storagePolicy) {
-        return isAbleToCache(bucketName, storagePolicy) && bytes.length <= sizeThresholdInBytes;
+        return isAbleToCache(bucketName, storagePolicy) && isAbleToCache(bytes);
     }
 
     private boolean isAbleToCache(BucketName bucketName, StoragePolicy storagePolicy) {
         return backend.getDefaultBucketName().equals(bucketName) && !storagePolicy.equals(LOW_COST);
+    }
+
+    private boolean isAbleToCache(byte[] bytes) {
+        return bytes.length <= sizeThresholdInBytes;
+    }
+
+    private Mono<InputStream> toInputStream(byte[] bytes) {
+        return Mono.fromCallable(() -> new ByteArrayInputStream(bytes));
+    }
+
+    private Mono<InputStream> readFromBackend(BucketName bucketName, BlobId blobId) {
+        return Mono.fromCallable(() -> backend.read(bucketName, blobId));
+    }
+
+    private PushbackInputStream toPushbackStream(InputStream inputStream) {
+        return new PushbackInputStream(inputStream, sizeThresholdInBytes + 1);
     }
 }
