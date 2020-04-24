@@ -94,7 +94,8 @@ public class CachedBlobStore implements BlobStore {
         Preconditions.checkNotNull(inputStream, "InputStream must not be null");
 
         if (isAbleToCache(bucketName, storagePolicy)) {
-            return saveInCache(bucketName, inputStream, storagePolicy);
+            return Mono.fromCallable(() -> toPushbackStream(inputStream))
+                .flatMap(pushbackInputStream -> saveInCache(bucketName, pushbackInputStream, storagePolicy));
         }
 
         return backend.save(bucketName, inputStream, storagePolicy);
@@ -141,9 +142,7 @@ public class CachedBlobStore implements BlobStore {
         }
     }
 
-    private Publisher<BlobId> saveInCache(BucketName bucketName, InputStream inputStream, StoragePolicy storagePolicy) {
-        PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, sizeThresholdInBytes + 1);
-
+    private Mono<BlobId> saveInCache(BucketName bucketName, PushbackInputStream pushbackInputStream, StoragePolicy storagePolicy) {
         return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
             .flatMap(Mono::justOrEmpty)
             .filter(bytes -> isAbleToCache(bucketName, bytes, storagePolicy))
@@ -194,7 +193,7 @@ public class CachedBlobStore implements BlobStore {
     }
 
     private PushbackInputStream toPushbackStream(InputStream inputStream) {
-        return new PushbackInputStream(inputStream, sizeThresholdInBytes + 1);
+        return new PushbackInputStream(inputStream, sizeThresholdInBytes);
     }
 
     private Mono<byte[]> readFromCache(BlobId blobId) {
