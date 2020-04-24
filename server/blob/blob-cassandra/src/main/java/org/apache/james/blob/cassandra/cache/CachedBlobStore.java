@@ -57,10 +57,12 @@ public class CachedBlobStore implements BlobStore {
     @Override
     public InputStream read(BucketName bucketName, BlobId blobId) throws ObjectStoreIOException, ObjectNotFoundException {
         return Mono.just(bucketName)
-            .filter(backend.getDefaultBucketName()::equals)
-            .flatMap(ignored -> Mono.from(cache.read(blobId))
-                    .<InputStream>flatMap(bytes -> Mono.fromCallable(() -> new ByteArrayInputStream(bytes))))
-            .switchIfEmpty(Mono.fromCallable(() -> backend.read(bucketName, blobId)))
+            .filter(getDefaultBucketName()::equals)
+            .flatMap(ignored -> readFromCache(blobId)
+                .flatMap(this::toInputStream))
+            .switchIfEmpty(readFromBackend(bucketName, blobId)
+                .map(this::toPushbackStream)
+                .flatMap(pushbackInputStream -> saveInCache(pushbackInputStream, blobId, bucketName)))
             .blockOptional()
             .orElseThrow(() -> new ObjectNotFoundException(String.format("Could not retrieve blob metadata for %s", blobId)));
     }
@@ -69,12 +71,11 @@ public class CachedBlobStore implements BlobStore {
     public Mono<byte[]> readBytes(BucketName bucketName, BlobId blobId) {
         return Mono.just(bucketName)
             .filter(getDefaultBucketName()::equals)
-            .flatMap(ignored -> Mono.from(cache.read(blobId))
-                .switchIfEmpty(Mono.from(backend.readBytes(bucketName, blobId))
+            .flatMap(ignored -> readFromCache(blobId)
+                .switchIfEmpty(readBytesFromBackend(bucketName, blobId)
                     .filter(this::isAbleToCache)
-                    .flatMap(bytes -> saveInCache(blobId, bytes)
-                        .then(Mono.just(bytes)))))
-            .switchIfEmpty(Mono.from(backend.readBytes(bucketName, blobId)));
+                    .flatMap(bytes -> saveInCache(blobId, bytes).then(Mono.just(bytes)))))
+            .switchIfEmpty(readBytesFromBackend(bucketName, blobId));
     }
 
     @Override
@@ -146,20 +147,25 @@ public class CachedBlobStore implements BlobStore {
         return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
             .flatMap(Mono::justOrEmpty)
             .filter(bytes -> isAbleToCache(bucketName, bytes, storagePolicy))
-            .flatMap(bytes -> Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy))
+            .flatMap(bytes -> saveInBackend(bucketName, pushbackInputStream, storagePolicy)
                 .flatMap(blobId -> saveInCache(blobId, bytes).thenReturn(blobId)))
-            .switchIfEmpty(Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy)));
+            .switchIfEmpty(saveInBackend(bucketName, pushbackInputStream, storagePolicy));
+    }
+
+    private Mono<BlobId> saveInBackend(BucketName bucketName, PushbackInputStream pushbackInputStream, StoragePolicy storagePolicy) {
+        return Mono.from(backend.save(bucketName, pushbackInputStream, storagePolicy));
     }
 
     private Mono<Void> saveInCache(BlobId blobId, byte[] bytes) {
         return Mono.from(cache.cache(blobId, bytes));
     }
 
-    private Mono<InputStream> saveInCache(PushbackInputStream pushbackInputStream, BlobId blobId) {
+    private Mono<InputStream> saveInCache(PushbackInputStream pushbackInputStream, BlobId blobId, BucketName bucketName) {
         return Mono.fromCallable(() -> fullyReadSmallStream(pushbackInputStream))
             .flatMap(Mono::justOrEmpty)
-            .filter(this::isAbleToCache)
-            .flatMap(bytes -> Mono.from(cache.cache(blobId, bytes)).then(Mono.just(bytes)))
+            .filter(bytes -> isAbleToCache(bytes, bucketName))
+            .flatMap(bytes -> Mono.from(cache.cache(blobId, bytes))
+                .map(ignore -> pushbackBytesArrayRead(pushbackInputStream, bytes)))
             .then(Mono.just(pushbackInputStream));
     }
 
@@ -169,6 +175,10 @@ public class CachedBlobStore implements BlobStore {
 
     private boolean isAbleToCache(BucketName bucketName, StoragePolicy storagePolicy) {
         return backend.getDefaultBucketName().equals(bucketName) && !storagePolicy.equals(LOW_COST);
+    }
+
+    private boolean isAbleToCache(byte[] bytes, BucketName bucketName) {
+        return isAbleToCache(bytes) && backend.getDefaultBucketName().equals(bucketName);
     }
 
     private boolean isAbleToCache(byte[] bytes) {
@@ -185,5 +195,22 @@ public class CachedBlobStore implements BlobStore {
 
     private PushbackInputStream toPushbackStream(InputStream inputStream) {
         return new PushbackInputStream(inputStream, sizeThresholdInBytes + 1);
+    }
+
+    private Mono<byte[]> readFromCache(BlobId blobId) {
+        return Mono.from(cache.read(blobId));
+    }
+
+    private Mono<byte[]> readBytesFromBackend(BucketName bucketName, BlobId blobId) {
+        return Mono.from(backend.readBytes(bucketName, blobId));
+    }
+
+    private Mono<Void> pushbackBytesArrayRead(PushbackInputStream pushbackInputStream, byte[] bytes) {
+        try {
+            pushbackInputStream.unread(bytes);
+        } catch (IOException e) {
+            // Ignore
+        }
+        return Mono.empty();
     }
 }
