@@ -120,7 +120,7 @@ public class CachedBlobStore implements BlobStore {
                 .flatMap(inputStream ->
                     Mono.fromCallable(() -> ReadAheadInputStream.eager().of(inputStream).length(sizeThresholdInBytes))
                         .flatMap(readAheadInputStream -> putInCacheIfNeeded(bucketName, readAheadInputStream, blobId)
-                            .then(Mono.fromCallable(() -> readAheadInputStream.in)))))
+                            .thenReturn(readAheadInputStream.in))))
             .blockOptional()
             .orElseThrow(() -> new ObjectNotFoundException(String.format("Could not retrieve blob metadata for %s", blobId)));
     }
