@@ -134,7 +134,7 @@ trait EchoMethodContract {
 
   @Test
   @Category(Array(classOf[BasicFeature]))
-  def echoMethodShouldResponseOKWithRFC8621VersionAndSupportedMethod(): Unit = {
+  def echoMethodShouldRespondOKWithRFC8621VersionAndSupportedMethod(): Unit = {
     val response: String = RestAssured
       .`given`()
         .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
@@ -153,7 +153,7 @@ trait EchoMethodContract {
 
   @Test
   @Category(Array(classOf[BasicFeature]))
-  def echoMethodShouldResponseWithRFC8621VersionAndUnsupportedMethod(): Unit = {
+  def echoMethodShouldRespondWithRFC8621VersionAndUnsupportedMethod(): Unit = {
     val response: String = RestAssured
       .`given`()
         .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
