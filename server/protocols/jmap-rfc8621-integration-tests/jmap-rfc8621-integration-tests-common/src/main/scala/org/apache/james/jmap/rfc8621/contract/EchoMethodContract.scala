@@ -113,7 +113,6 @@ object EchoMethodContract {
       |}""".stripMargin
 
   private val ACCEPT_RFC8621_VERSION_HEADER: String = """application/json; jmapVersion=rfc-8621"""
-  private val UNSUPPORTED_VERSION_HEADER: String = """application/json; jmapVersion=rfc-8622"""
 }
 
 trait EchoMethodContract {
@@ -139,7 +138,6 @@ trait EchoMethodContract {
         .body(REQUEST_OBJECT)
       .when()
         .post()
-        .prettyPeek()
       .then
         .statusCode(HttpStatus.SC_OK)
         .contentType(ContentType.JSON)
@@ -158,7 +156,6 @@ trait EchoMethodContract {
         .body(REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD)
       .when()
         .post()
-        .prettyPeek()
       .then
         .statusCode(HttpStatus.SC_OK)
         .contentType(ContentType.JSON)

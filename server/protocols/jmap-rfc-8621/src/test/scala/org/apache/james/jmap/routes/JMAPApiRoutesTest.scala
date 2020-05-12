@@ -157,36 +157,36 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
   "RFC-8621 version, GET" should "not supported and return 404 status" in {
     RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
       .when()
-      .get
+        .get
       .then
-      .statusCode(HttpStatus.SC_NOT_FOUND)
+        .statusCode(HttpStatus.SC_NOT_FOUND)
   }
 
   "RFC-8621 version, POST, without body" should "return 200 status" in {
     RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
       .when()
-      .post
+        .post
       .then
-      .statusCode(HttpStatus.SC_OK)
+        .statusCode(HttpStatus.SC_OK)
   }
 
   "RFC-8621 version, POST, methods include supported" should "return OK status" in {
     val response = RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-      .body(REQUEST_OBJECT)
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .body(REQUEST_OBJECT)
       .when()
-      .post()
+        .post()
       .then
-      .statusCode(HttpStatus.SC_OK)
-      .contentType(ContentType.JSON)
+        .statusCode(HttpStatus.SC_OK)
+       .contentType(ContentType.JSON)
       .extract()
-      .body()
-      .asString()
+        .body()
+        .asString()
 
     assertThatJson(response).isEqualTo(RESPONSE_OBJECT)
   }
@@ -195,16 +195,16 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
 
     val response = RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-      .body(REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD)
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .body(REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD)
       .when()
-      .post()
+        .post()
       .then
-      .statusCode(HttpStatus.SC_OK)
-      .contentType(ContentType.JSON)
+        .statusCode(HttpStatus.SC_OK)
+        .contentType(ContentType.JSON)
       .extract()
-      .body()
-      .asString()
+        .body()
+        .asString()
 
     assertThatJson(response).isEqualTo(RESPONSE_OBJECT_WITH_UNSUPPORTED_METHOD)
   }
@@ -212,31 +212,31 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
   "Draft version, GET" should "return 404 status" in {
     RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_DRAFT_VERSION_HEADER)
+        .header(ACCEPT.toString, ACCEPT_DRAFT_VERSION_HEADER)
       .when()
-      .get
+        .get
       .then
-      .statusCode(HttpStatus.SC_NOT_FOUND)
+        .statusCode(HttpStatus.SC_NOT_FOUND)
   }
 
   "Draft version, POST, without body" should "return 400 status" in {
     RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_DRAFT_VERSION_HEADER)
+        .header(ACCEPT.toString, ACCEPT_DRAFT_VERSION_HEADER)
       .when()
-      .post
+        .post
       .then
-      .statusCode(HttpStatus.SC_NOT_FOUND)
+        .statusCode(HttpStatus.SC_NOT_FOUND)
   }
 
   "RFC-8621 version, POST, with wrong requestObject body" should "return 400 status" in {
     RestAssured
       .`given`()
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-      .body(WRONG_OBJECT_REQUEST)
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .body(WRONG_OBJECT_REQUEST)
       .when()
-      .post
+        .post
       .then
-      .statusCode(HttpStatus.SC_BAD_REQUEST)
+        .statusCode(HttpStatus.SC_BAD_REQUEST)
   }
 }
