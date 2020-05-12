@@ -20,20 +20,6 @@ package org.apache.james.jmap.rfc8621.contract
 
 import java.nio.charset.StandardCharsets
 
-import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
-import io.restassured.RestAssured
-import io.restassured.builder.RequestSpecBuilder
-import io.restassured.config.EncoderConfig.encoderConfig
-import io.restassured.config.RestAssuredConfig.newConfig
-import io.restassured.http.ContentType
-import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
-import org.apache.http.HttpStatus
-import org.apache.james.GuiceJamesServer
-import org.apache.james.jmap.JMAPUrls.JMAP
-import org.apache.james.jmap.draft.JmapGuiceProbe
-import org.apache.james.jmap.rfc8621.contract.EchoMethodContract._
-import org.junit.jupiter.api.{BeforeEach, Test}
-
 object EchoMethodContract {
 
   private val REQUEST_OBJECT: String =
