@@ -30,11 +30,9 @@ import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.apache.http.HttpStatus
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.JMAPUrls.JMAP
-import org.apache.james.jmap.categories.BasicFeature
 import org.apache.james.jmap.draft.JmapGuiceProbe
 import org.apache.james.jmap.rfc8621.contract.EchoMethodContract._
-import org.junit.experimental.categories.Category
-import org.junit.jupiter.api.{BeforeEach, Test}
+import org.junit.jupiter.api.{BeforeEach, Tag, Test}
 
 object EchoMethodContract {
 
@@ -133,7 +131,7 @@ trait EchoMethodContract {
   }
 
   @Test
-  @Category(Array(classOf[BasicFeature]))
+  @Tag("BasicFeature")
   def echoMethodShouldRespondOKWithRFC8621VersionAndSupportedMethod(): Unit = {
     val response: String = RestAssured
       .`given`()
@@ -152,7 +150,6 @@ trait EchoMethodContract {
   }
 
   @Test
-  @Category(Array(classOf[BasicFeature]))
   def echoMethodShouldRespondWithRFC8621VersionAndUnsupportedMethod(): Unit = {
     val response: String = RestAssured
       .`given`()

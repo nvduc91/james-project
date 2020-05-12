@@ -61,12 +61,6 @@
                 <artifactId>jmap-rfc8621-integration-tests-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>james-server-jmap-draft-integration-testing</artifactId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

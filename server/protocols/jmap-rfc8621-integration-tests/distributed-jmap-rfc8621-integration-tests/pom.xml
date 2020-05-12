@@ -28,7 +28,8 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>distributed-jmap-rfc8621-integration-tests</artifactId>
-
+    <description>Distributed Integration testing for Jmap rfc8621</description>
+    <name>Apache James :: Server :: JMAP RFC-8621 :: Distributed Integration testing</name>
     <dependencies>
         <dependency>
             <groupId>${james.groupId}</groupId>
@@ -105,10 +106,6 @@
             <groupId>${james.groupId}</groupId>
             <artifactId>james-server-guice-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>${james.groupId}</groupId>
-            <artifactId>james-server-memory-guice</artifactId>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -120,7 +117,11 @@
                     <reuseForks>true</reuseForks>
                     <!-- Fail tests longer than 2 hours, prevent form random locking tests -->
                     <forkedProcessTimeoutInSeconds>7200</forkedProcessTimeoutInSeconds>
+                    <!-- Junit 5 move from Category to Tag, and it need tag's name as parameter -->
                     <groups combine.self="override">BasicFeature</groups>
+                    <properties>
+                        <includeTags>junit5</includeTags>
+                    </properties>
                 </configuration>
             </plugin>
         </plugins>
