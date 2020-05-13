@@ -28,6 +28,8 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>jmap-rfc-8621-integration-tests-common</artifactId>
+    <description>JMAP RFC-8621 integration test suite common to all products</description>
+    <name>Apache James :: Server :: JMAP RFC-8621 :: Common Integration Test Suite</name>
 
     <dependencies>
         <dependency>
@@ -47,12 +49,12 @@
             <artifactId>play-json_${scala.base}</artifactId>
         </dependency>
         <dependency>
-            <groupId>net.javacrumbs.json-unit</groupId>
-            <artifactId>json-unit-assertj</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.json-unit</groupId>
+            <artifactId>json-unit-assertj</artifactId>
         </dependency>
     </dependencies>
 

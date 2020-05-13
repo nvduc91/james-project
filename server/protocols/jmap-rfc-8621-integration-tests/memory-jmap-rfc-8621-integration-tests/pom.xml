@@ -28,6 +28,8 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>memory-jmap-rfc-8621-integration-tests</artifactId>
+    <description>JMAP RFC-8621 integration test for memory product</description>
+    <name>Apache James :: Server :: JMAP RFC-8621 :: Memory Integration Testing</name>
 
     <dependencies>
         <dependency>
@@ -50,6 +52,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>jmap-rfc-8621-integration-tests-common</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
