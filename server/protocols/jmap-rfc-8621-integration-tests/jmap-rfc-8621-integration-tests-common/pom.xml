@@ -29,7 +29,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>jmap-rfc-8621-integration-tests-common</artifactId>
     <description>JMAP RFC-8621 integration test suite common to all products</description>
-    <name>Apache James :: Server :: JMAP RFC-8621 :: Common Integration Test Suite</name>
+    <name>Apache James :: Server :: JMAP RFC-8621 :: Contract for Integration Testing</name>
 
     <dependencies>
         <dependency>

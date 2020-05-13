@@ -183,7 +183,7 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
         .post()
       .then
         .statusCode(HttpStatus.SC_OK)
-       .contentType(ContentType.JSON)
+        .contentType(ContentType.JSON)
       .extract()
         .body()
         .asString()
