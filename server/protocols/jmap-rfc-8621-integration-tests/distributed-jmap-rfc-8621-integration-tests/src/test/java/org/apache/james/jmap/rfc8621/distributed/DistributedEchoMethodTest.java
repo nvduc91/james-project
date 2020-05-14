@@ -19,8 +19,6 @@
 
 package org.apache.james.jmap.rfc8621.distributed;
 
-import static org.apache.james.modules.TestJMAPServerModule.LIMIT_TO_20_MESSAGES;
-
 import org.apache.james.CassandraExtension;
 import org.apache.james.CassandraRabbitMQJamesServerMain;
 import org.apache.james.DockerElasticSearchExtension;
@@ -43,6 +41,6 @@ public class DistributedEchoMethodTest implements EchoMethodContract {
         .extension(new AwsS3BlobStoreExtension())
         .server(configuration -> GuiceJamesServer.forConfiguration(configuration)
             .combineWith(CassandraRabbitMQJamesServerMain.MODULES)
-            .overrideWith(TestJMAPServerModule.maximumMessages(LIMIT_TO_20_MESSAGES)))
+            .overrideWith(new TestJMAPServerModule()))
         .build();
 }

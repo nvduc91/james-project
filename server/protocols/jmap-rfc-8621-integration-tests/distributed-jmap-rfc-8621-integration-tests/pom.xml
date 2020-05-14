@@ -28,18 +28,19 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>distributed-jmap-rfc-8621-integration-tests</artifactId>
-    <description>Distributed Integration testing for Jmap rfc8621</description>
+    <description>Distributed Integration testing for JMAP RFC-8621</description>
     <name>Apache James :: Server :: JMAP RFC-8621 :: Distributed Integration Testing</name>
+
     <dependencies>
         <dependency>
             <groupId>${james.groupId}</groupId>
-            <artifactId>apache-james-backends-es</artifactId>
+            <artifactId>apache-james-backends-cassandra</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>${james.groupId}</groupId>
-            <artifactId>apache-james-backends-cassandra</artifactId>
+            <artifactId>apache-james-backends-es</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -77,16 +78,6 @@
         </dependency>
         <dependency>
             <groupId>${james.groupId}</groupId>
-            <artifactId>jmap-rfc-8621-integration-tests-common</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>${james.groupId}</groupId>
-            <artifactId>james-server-cassandra-rabbitmq-guice</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>${james.groupId}</groupId>
             <artifactId>james-server-cassandra-guice</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
@@ -94,6 +85,11 @@
         <dependency>
             <groupId>${james.groupId}</groupId>
             <artifactId>james-server-cassandra-rabbitmq-guice</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${james.groupId}</groupId>
+            <artifactId>james-server-cassandra-rabbitmq-guice</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -101,11 +97,6 @@
             <groupId>${james.groupId}</groupId>
             <artifactId>james-server-guice-common</artifactId>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>${james.groupId}</groupId>
-            <artifactId>james-server-guice-common</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -114,7 +105,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>${james.groupId}</groupId>
+            <artifactId>jmap-rfc-8621-integration-tests-common</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

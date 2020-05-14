@@ -32,6 +32,7 @@ import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.JMAPUrls.JMAP
 import org.apache.james.jmap.draft.JmapGuiceProbe
 import org.apache.james.jmap.rfc8621.contract.EchoMethodContract._
+import org.apache.james.jmap.rfc8621.contract.tags.CategoryTags
 import org.junit.jupiter.api.{BeforeEach, Tag, Test}
 
 object EchoMethodContract {
@@ -131,7 +132,7 @@ trait EchoMethodContract {
   }
 
   @Test
-  @Tag("BasicFeature")
+  @Tag(CategoryTags.BASIC_FEATURE)
   def echoMethodShouldRespondOKWithRFC8621VersionAndSupportedMethod(): Unit = {
     val response: String = RestAssured
       .`given`()
