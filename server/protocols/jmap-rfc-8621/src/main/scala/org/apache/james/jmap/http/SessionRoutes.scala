@@ -24,12 +24,13 @@ import java.util.stream.Stream
 import io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.codec.http.HttpResponseStatus.OK
-import javax.inject.Inject
+import javax.inject.{Inject, Named}
 import org.apache.james.jmap.HttpConstants.JSON_CONTENT_TYPE_UTF8
 import org.apache.james.jmap.JMAPRoutes.CORS_CONTROL
 import org.apache.james.jmap.JMAPUrls.AUTHENTICATION
 import org.apache.james.jmap.exceptions.UnauthorizedException
 import org.apache.james.jmap.http.SessionRoutes.{JMAP_SESSION, LOGGER}
+import org.apache.james.jmap.http.rfc8621.InjectionKeys
 import org.apache.james.jmap.json.Serializer
 import org.apache.james.jmap.model.Session
 import org.apache.james.jmap.{Endpoint, JMAPRoute, JMAPRoutes}
@@ -46,7 +47,7 @@ object SessionRoutes {
 }
 
 @Inject
-class SessionRoutes(val authenticator: Authenticator,
+class SessionRoutes(@Named(InjectionKeys.RFC_8621) val authenticator: Authenticator,
                     val sessionSupplier: SessionSupplier = new SessionSupplier(),
                     val serializer: Serializer = new Serializer()) extends JMAPRoutes {
 

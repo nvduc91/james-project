@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  ****************************************************************/
+
 package org.apache.james.jmap.rfc8621.contract
 
 import java.nio.charset.StandardCharsets
@@ -26,64 +27,13 @@ import io.restassured.builder.RequestSpecBuilder
 import io.restassured.config.EncoderConfig.encoderConfig
 import io.restassured.config.RestAssuredConfig.newConfig
 import io.restassured.http.ContentType
-import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.apache.http.HttpStatus
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.JMAPUrls.JMAP
 import org.apache.james.jmap.draft.JmapGuiceProbe
-import org.apache.james.jmap.rfc8621.contract.EchoMethodContract._
 import org.junit.jupiter.api.{BeforeEach, Test}
 
-object EchoMethodContract {
-  private val REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD: String =
-    """{
-      |  "using": [
-      |    "urn:ietf:params:jmap:core"
-      |  ],
-      |  "methodCalls": [
-      |    [
-      |      "Core/echo",
-      |      {
-      |        "arg1": "arg1data",
-      |        "arg2": "arg2data"
-      |      },
-      |      "c1"
-      |    ],
-      |    [
-      |      "error",
-      |      {
-      |        "type": "Not implemented"
-      |      },
-      |      "notsupport"
-      |    ]
-      |  ]
-      |}""".stripMargin
-
-  private val RESPONSE_OBJECT_WITH_UNSUPPORTED_METHOD: String =
-    """{
-      |  "sessionState": "75128aab4b1b",
-      |  "methodResponses": [
-      |    [
-      |      "Core/echo",
-      |      {
-      |        "arg1": "arg1data",
-      |        "arg2": "arg2data"
-      |      },
-      |      "c1"
-      |    ],
-      |    [
-      |      "error",
-      |      {
-      |        "type": "Not implemented"
-      |      },
-      |      "notsupport"
-      |    ]
-      |  ]
-      |}""".stripMargin
-}
-
-trait EchoMethodContract {
-
+trait AuthenticationContract {
   @BeforeEach
   def setUp(server: GuiceJamesServer): Unit = {
     RestAssured.requestSpecification = new RequestSpecBuilder()
@@ -98,38 +48,14 @@ trait EchoMethodContract {
   }
 
   @Test
-  def echoMethodShouldRespondOKWithRFC8621VersionAndSupportedMethod(): Unit = {
-    val response: String = RestAssured
-      .`given`()
-        .header(ACCEPT.toString, Fixture.ACCEPT_RFC8621_VERSION_HEADER)
-        .body(Fixture.ECHO_REQUEST_OBJECT)
-      .when()
-        .post()
-      .then
-        .statusCode(HttpStatus.SC_OK)
-        .contentType(ContentType.JSON)
-      .extract()
-        .body()
-        .asString()
-
-    assertThatJson(response).isEqualTo(Fixture.ECHO_RESPONSE_OBJECT)
-  }
-
-  @Test
-  def echoMethodShouldRespondWithRFC8621VersionAndUnsupportedMethod(): Unit = {
-    val response: String = RestAssured
-      .`given`()
-        .header(ACCEPT.toString, Fixture.ACCEPT_RFC8621_VERSION_HEADER)
-        .body(REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD)
-      .when()
-        .post()
-      .then
-        .statusCode(HttpStatus.SC_OK)
-        .contentType(ContentType.JSON)
-      .extract()
-        .body()
-        .asString()
-
-    assertThatJson(response).isEqualTo(RESPONSE_OBJECT_WITH_UNSUPPORTED_METHOD)
+  def postShouldRespondUnauthorizedWhenNoCredentials(): Unit = {
+    RestAssured
+    .`given`()
+      .header(ACCEPT.toString, Fixture.ACCEPT_RFC8621_VERSION_HEADER)
+      .body(Fixture.ECHO_REQUEST_OBJECT)
+    .when()
+      .post()
+    .then
+      .statusCode(HttpStatus.SC_UNAUTHORIZED)
   }
 }

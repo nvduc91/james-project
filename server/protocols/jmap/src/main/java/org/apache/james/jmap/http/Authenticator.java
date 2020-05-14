@@ -38,7 +38,7 @@ import reactor.netty.http.server.HttpServerRequest;
 public class Authenticator {
     private static final Logger LOGGER = LoggerFactory.getLogger(Authenticator.class);
 
-    static Authenticator of(MetricFactory metricFactory, AuthenticationStrategy... authenticationStrategies) {
+    public static Authenticator of(MetricFactory metricFactory, AuthenticationStrategy... authenticationStrategies) {
         return new Authenticator(ImmutableList.copyOf(authenticationStrategies), metricFactory);
     }
 

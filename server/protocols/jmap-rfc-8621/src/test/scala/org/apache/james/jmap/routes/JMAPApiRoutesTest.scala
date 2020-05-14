@@ -30,7 +30,9 @@ import io.restassured.http.ContentType
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.apache.http.HttpStatus
 import org.apache.james.jmap.JMAPUrls.JMAP
-import org.apache.james.jmap.{JMAPConfiguration, JMAPRoutesHandler, JMAPServer, Version, VersionParser}
+import org.apache.james.jmap._
+import org.apache.james.jmap.http.Authenticator
+import org.apache.james.metrics.tests.RecordingMetricFactory
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -42,7 +44,8 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
   private val ACCEPT_DRAFT_VERSION_HEADER = ACCEPT_JMAP_VERSION_HEADER + Version.DRAFT.asString()
   private val ACCEPT_RFC8621_VERSION_HEADER = ACCEPT_JMAP_VERSION_HEADER + Version.RFC8621.asString()
 
-  private val JMAP_API_ROUTE: JMAPApiRoutes = new JMAPApiRoutes()
+  private val AUTHENTICATOR: Authenticator = Authenticator.of(new RecordingMetricFactory)
+  private val JMAP_API_ROUTE: JMAPApiRoutes = new JMAPApiRoutes(AUTHENTICATOR)
   private val ROUTES_HANDLER: ImmutableSet[JMAPRoutesHandler] = ImmutableSet.of(new JMAPRoutesHandler(Version.RFC8621, JMAP_API_ROUTE))
 
   private val REQUEST_OBJECT: String =
