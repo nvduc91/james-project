@@ -12,9 +12,7 @@ import org.apache.james.mailbox.extension.PreDeletionHook
 import org.apache.james.mailbox.inmemory.MemoryMailboxManagerProvider
 import org.apache.james.user.api.UsersRepositoryException
 import org.apache.james.user.memory.MemoryUsersRepository
-import org.assertj.core.api.Assertions
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.{BeforeEach, Test}
+import org.junit.jupiter.api.{Assertions, BeforeEach, Test}
 import org.mockito.Mockito
 import org.mockito.Mockito.{mock, when}
 import reactor.netty.http.server.HttpServerRequest
@@ -44,29 +42,26 @@ class BasicAuthenticationStrategyTest {
     testee = new BasicAuthenticationStrategy(basicAuthenticationTokenManager, mailboxManager)
   }
 
-  /*@Test
+  @Test
   def shouldReturnAnyUsernameWhenValidBasicAuthToken(): Unit = {
     Mockito.when(mockedRequest.requestHeaders().getAll(AUTHORIZATION_HEADERS)).thenReturn(ImmutableList.of(userExistedToken))
-    assertThat(testee.createMailboxSession(mockedRequest).block.getUser).isSameAs(username1)
+    Assertions.assertEquals(testee.createMailboxSession(mockedRequest).block.getUser, username1)
   }
 
   @Test
   def shouldThrowWhenInvalidBasicAuthToken(): Unit = {
     Mockito.when(mockedHeaders.getAll(AUTHORIZATION_HEADERS)).thenReturn(ImmutableList.of("invalid"))
-    Assertions.assertThat(testee.createMailboxSession(mockedRequest).blockOptional).isNull
+    Assertions.assertThrows(classOf[IllegalArgumentException], () => testee.createMailboxSession(mockedRequest).block())
   }
 
   @Test
   def shouldThrowWhenUsernameNotFound(): Unit = {
     Mockito.when(mockedHeaders.getAll(AUTHORIZATION_HEADERS)).thenReturn(ImmutableList.of(userNonExistedToken))
-    Assertions.assertThatThrownBy(() => testee.createMailboxSession(mockedRequest).block.getUser)
-      .isInstanceOf(classOf[UsersRepositoryException])
+    assert(testee.createMailboxSession(mockedRequest).blockOptional().isEmpty)
   }
 
   @Test
   def shouldThrowWhenNullHttpServletRequest(): Unit = {
-    when(mockedRequest.requestHeaders).thenReturn(null)
-    Assertions.assertThatThrownBy(() => testee.createMailboxSession(mockedRequest).block.getUser)
-      .isInstanceOf(classOf[IllegalArgumentException])
-  }*/
+    Assertions.assertThrows(classOf[IllegalArgumentException], () => testee.createMailboxSession(null).block())
+  }
 }
