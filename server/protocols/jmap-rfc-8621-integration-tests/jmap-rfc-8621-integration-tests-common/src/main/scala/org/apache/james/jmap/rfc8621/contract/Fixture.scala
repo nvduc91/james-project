@@ -52,5 +52,5 @@ object Fixture {
       |  ]
       |}""".stripMargin
 
-  val ACCEPT_RFC8621_VERSION_HEADER: String = """application/json; jmapVersion=rfc-8621"""
+  val ACCEPT_RFC8621_VERSION_HEADER: String = "application/json; jmapVersion=rfc-8621"
 }
