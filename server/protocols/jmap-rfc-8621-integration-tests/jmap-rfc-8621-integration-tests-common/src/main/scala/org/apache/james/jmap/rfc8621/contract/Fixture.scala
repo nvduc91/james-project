@@ -21,11 +21,12 @@ package org.apache.james.jmap.rfc8621.contract
 
 import java.nio.charset.StandardCharsets
 
+import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
 import io.restassured.authentication.PreemptiveBasicAuthScheme
 import io.restassured.builder.RequestSpecBuilder
 import io.restassured.config.EncoderConfig.encoderConfig
 import io.restassured.config.RestAssuredConfig.newConfig
-import io.restassured.http.ContentType
+import io.restassured.http.{ContentType, Header, Headers}
 import org.apache.james.GuiceJamesServer
 import org.apache.james.core.{Domain, Username}
 import org.apache.james.jmap.JMAPUrls.JMAP
@@ -50,6 +51,14 @@ object Fixture {
     authScheme
   }
 
+  def getHeadersWith(authHeader: Header): Headers = {
+    new Headers(
+      new Header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER),
+      authHeader
+    )
+  }
+
+  val AUTHORIZATION_HEADER: String = "Authorization"
   val DOMAIN: Domain = Domain.of("domain.tld")
   val DOMAIN_WITH_SPACE: Domain = Domain.of("dom ain.tld")
   val _2_DOT_DOMAIN: Domain = Domain.of("do.main.tld")
