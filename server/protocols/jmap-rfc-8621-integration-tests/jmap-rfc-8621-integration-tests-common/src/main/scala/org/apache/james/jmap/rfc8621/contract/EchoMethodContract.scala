@@ -18,6 +18,19 @@
  ****************************************************************/
 package org.apache.james.jmap.rfc8621.contract
 
+import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
+import io.restassured.RestAssured._
+import io.restassured.http.ContentType.JSON
+import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
+import org.apache.http.HttpStatus.SC_OK
+import org.apache.james.GuiceJamesServer
+import org.apache.james.jmap.http.UserCredential
+import org.apache.james.jmap.rfc8621.contract.EchoMethodContract._
+import org.apache.james.jmap.rfc8621.contract.Fixture._
+import org.apache.james.jmap.rfc8621.contract.tags.CategoryTags
+import org.apache.james.utils.DataProbeImpl
+import org.junit.jupiter.api.{BeforeEach, Tag, Test}
+
 object EchoMethodContract {
   private val REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD: String =
     """{

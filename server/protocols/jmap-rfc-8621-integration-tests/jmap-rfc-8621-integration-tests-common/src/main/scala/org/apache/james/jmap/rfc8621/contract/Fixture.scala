@@ -21,6 +21,17 @@ package org.apache.james.jmap.rfc8621.contract
 
 import java.nio.charset.StandardCharsets
 
+import io.restassured.authentication.PreemptiveBasicAuthScheme
+import io.restassured.builder.RequestSpecBuilder
+import io.restassured.config.EncoderConfig.encoderConfig
+import io.restassured.config.RestAssuredConfig.newConfig
+import io.restassured.http.ContentType
+import org.apache.james.GuiceJamesServer
+import org.apache.james.core.{Domain, Username}
+import org.apache.james.jmap.JMAPUrls.JMAP
+import org.apache.james.jmap.draft.JmapGuiceProbe
+import org.apache.james.jmap.http.UserCredential
+
 object Fixture {
   def baseRequestSpecBuilder(server: GuiceJamesServer) = new RequestSpecBuilder()
     .setContentType(ContentType.JSON)

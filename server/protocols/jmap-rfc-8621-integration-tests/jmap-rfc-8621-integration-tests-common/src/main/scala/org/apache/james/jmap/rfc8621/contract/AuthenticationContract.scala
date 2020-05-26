@@ -22,6 +22,17 @@ package org.apache.james.jmap.rfc8621.contract
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 
+import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
+import io.restassured.RestAssured._
+import io.restassured.http.{Header, Headers}
+import org.apache.http.HttpStatus.{SC_OK, SC_UNAUTHORIZED}
+import org.apache.james.GuiceJamesServer
+import org.apache.james.jmap.rfc8621.contract.AuthenticationContract._
+import org.apache.james.jmap.rfc8621.contract.Fixture._
+import org.apache.james.jmap.rfc8621.contract.tags.CategoryTags
+import org.apache.james.utils.DataProbeImpl
+import org.junit.jupiter.api.{BeforeEach, Tag, Test}
+
 object AuthenticationContract {
   private val AUTHORIZATION_HEADER: String = "Authorization"
 }
