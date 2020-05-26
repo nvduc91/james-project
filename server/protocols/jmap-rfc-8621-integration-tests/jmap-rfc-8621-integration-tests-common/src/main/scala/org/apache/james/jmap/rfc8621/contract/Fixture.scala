@@ -16,10 +16,38 @@
  * specific language governing permissions and limitations      *
  * under the License.                                           *
  ****************************************************************/
+
 package org.apache.james.jmap.rfc8621.contract
 
-object EchoMethodContract {
-  private val REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD: String =
+import java.nio.charset.StandardCharsets
+
+object Fixture {
+  def baseRequestSpecBuilder(server: GuiceJamesServer) = new RequestSpecBuilder()
+    .setContentType(ContentType.JSON)
+    .setAccept(ContentType.JSON)
+    .setConfig(newConfig.encoderConfig(encoderConfig.defaultContentCharset(StandardCharsets.UTF_8)))
+    .setPort(server.getProbe(classOf[JmapGuiceProbe])
+      .getJmapPort
+      .getValue)
+    .setBasePath(JMAP)
+
+  def authScheme(userCredential: UserCredential): PreemptiveBasicAuthScheme = {
+    val authScheme: PreemptiveBasicAuthScheme = new PreemptiveBasicAuthScheme
+    authScheme.setUserName(userCredential.username.asString())
+    authScheme.setPassword(userCredential.password)
+
+    authScheme
+  }
+
+  val DOMAIN: Domain = Domain.of("domain.tld")
+  val DOMAIN_WITH_SPACE: Domain = Domain.of("dom ain.tld")
+  val _2_DOT_DOMAIN: Domain = Domain.of("do.main.tld")
+  val BOB: Username = Username.fromLocalPartWithDomain("bob", DOMAIN)
+  val ALICE: Username = Username.fromLocalPartWithDomain("alice", _2_DOT_DOMAIN)
+  val BOB_PASSWORD: String = "bobpassword"
+  val ALICE_PASSWORD: String = "alicepassword"
+
+  val ECHO_REQUEST_OBJECT: String =
     """{
       |  "using": [
       |    "urn:ietf:params:jmap:core"
@@ -32,18 +60,11 @@ object EchoMethodContract {
       |        "arg2": "arg2data"
       |      },
       |      "c1"
-      |    ],
-      |    [
-      |      "error",
-      |      {
-      |        "type": "Not implemented"
-      |      },
-      |      "notsupport"
       |    ]
       |  ]
       |}""".stripMargin
 
-  private val RESPONSE_OBJECT_WITH_UNSUPPORTED_METHOD: String =
+  val ECHO_RESPONSE_OBJECT: String =
     """{
       |  "sessionState": "75128aab4b1b",
       |  "methodResponses": [
@@ -54,65 +75,9 @@ object EchoMethodContract {
       |        "arg2": "arg2data"
       |      },
       |      "c1"
-      |    ],
-      |    [
-      |      "error",
-      |      {
-      |        "type": "Not implemented"
-      |      },
-      |      "notsupport"
       |    ]
       |  ]
       |}""".stripMargin
-}
 
-trait EchoMethodContract {
-
-  @BeforeEach
-  def setUp(server: GuiceJamesServer): Unit = {
-    server.getProbe(classOf[DataProbeImpl])
-      .fluent()
-      .addDomain(DOMAIN.asString())
-      .addUser(BOB.asString(), BOB_PASSWORD)
-
-    requestSpecification = baseRequestSpecBuilder(server)
-        .setAuth(authScheme(UserCredential(BOB, BOB_PASSWORD)))
-      .build
-  }
-
-  @Test
-  @Tag(CategoryTags.BASIC_FEATURE)
-  def echoMethodShouldRespondOKWithRFC8621VersionAndSupportedMethod(): Unit = {
-
-    val response: String = `given`()
-        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-        .body(ECHO_REQUEST_OBJECT)
-      .when()
-        .post()
-      .then
-        .statusCode(SC_OK)
-        .contentType(JSON)
-      .extract()
-        .body()
-        .asString()
-
-    assertThatJson(response).isEqualTo(ECHO_RESPONSE_OBJECT)
-  }
-
-  @Test
-  def echoMethodShouldRespondWithRFC8621VersionAndUnsupportedMethod(): Unit = {
-    val response: String = `given`()
-        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-        .body(REQUEST_OBJECT_WITH_UNSUPPORTED_METHOD)
-      .when()
-        .post()
-      .then
-        .statusCode(SC_OK)
-        .contentType(JSON)
-      .extract()
-        .body()
-        .asString()
-
-    assertThatJson(response).isEqualTo(RESPONSE_OBJECT_WITH_UNSUPPORTED_METHOD)
-  }
+  val ACCEPT_RFC8621_VERSION_HEADER: String = "application/json; jmapVersion=rfc-8621"
 }
