@@ -24,6 +24,7 @@ import java.util.Base64
 
 import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
 import io.restassured.RestAssured._
+import io.restassured.authentication.NoAuthScheme
 import io.restassured.http.{Header, Headers}
 import org.apache.http.HttpStatus.{SC_OK, SC_UNAUTHORIZED}
 import org.apache.james.GuiceJamesServer
@@ -47,7 +48,9 @@ trait AuthenticationContract {
       .addDomain(_2_DOT_DOMAIN.asString())
       .addUser(ALICE.asString(), ALICE_PASSWORD)
 
-    requestSpecification = baseRequestSpecBuilder(server).build
+    requestSpecification = baseRequestSpecBuilder(server)
+      .setAuth(new NoAuthScheme())
+      .build
   }
 
   @Test
