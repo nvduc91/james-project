@@ -19,6 +19,7 @@
 package org.apache.james.jmap.rfc8621.contract
 
 import io.restassured.RestAssured.{`given`, requestSpecification}
+import io.restassured.authentication.NoAuthScheme
 import io.restassured.http.Header
 import org.apache.http.HttpStatus._
 import org.apache.james.GuiceJamesServer
@@ -62,7 +63,9 @@ trait JWTAuthenticationContract {
       .addDomain(DOMAIN.asString())
       .addUser(USER.asString(), USER_PASSWORD)
 
-    requestSpecification = baseRequestSpecBuilder(server).build
+    requestSpecification = baseRequestSpecBuilder(server)
+      .setAuth(new NoAuthScheme)
+      .build
   }
 
   @Tag(CategoryTags.BASIC_FEATURE)
