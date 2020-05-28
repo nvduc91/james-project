@@ -101,7 +101,7 @@ class BasicAuthenticationStrategy @Inject()(val usersRepository: UsersRepository
       .asJava()
   }
 
-  private def publishNext[T]: (Option[T], reactor.core.publisher.SynchronousSink[T]) => scala.Unit =
+  private def publishNext[T]: (Option[T], reactor.core.publisher.SynchronousSink[T]) => Unit =
     (maybeT, sink) => maybeT.foreach(t => sink.next(t))
 
   private def isValid(userCredential: UserCredential): Boolean =
