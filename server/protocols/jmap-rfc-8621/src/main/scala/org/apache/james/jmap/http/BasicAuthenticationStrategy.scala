@@ -36,7 +36,6 @@ import reactor.core.scala.publisher.SFlux
 import reactor.netty.http.server.HttpServerRequest
 
 import scala.compat.java8.StreamConverters._
-import scala.tools.nsc.typechecker.Macros.Success
 import scala.util.{Failure, Success, Try}
 
 object UserCredential {
