@@ -36,6 +36,8 @@ import reactor.core.scala.publisher.SFlux
 import reactor.netty.http.server.HttpServerRequest
 
 import scala.compat.java8.StreamConverters._
+import scala.tools.nsc.typechecker.Macros.Success
+import scala.util.{Failure, Success, Try}
 
 object UserCredential {
   type BasicAuthenticationHeaderValue = String Refined MatchesRegex["Basic [\\d\\w=]++"]
@@ -72,17 +74,14 @@ object UserCredential {
     val usernameString: String = token.substring(0, partSeparatorIndex)
     val passwordString: String = token.substring(partSeparatorIndex + 1)
 
-    try {
-      Some(UserCredential(Username.of(usernameString), passwordString))
-    } catch {
-      case throwable: IllegalArgumentException => {
+    Try(UserCredential(Username.of(usernameString), passwordString)) match {
+      case Success(credential) => Some(credential)
+      case Failure(throwable:IllegalArgumentException) =>
         logger.info("Username is not valid", throwable)
         None
-      }
-      case unexpectedException => {
+      case Failure(unexpectedException) =>
         logger.error("Unexpected Exception", unexpectedException)
         None
-      }
     }
   }
 }
