@@ -21,6 +21,7 @@ package org.apache.james.jmap.rfc8621.contract
 
 import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
 import io.restassured.RestAssured.{`given`, requestSpecification}
+import io.restassured.authentication.NoAuthScheme
 import io.restassured.http.Header
 import org.apache.http.HttpStatus.{SC_OK, SC_UNAUTHORIZED}
 import org.apache.james.GuiceJamesServer
@@ -42,6 +43,7 @@ trait AuthenticationContract {
       .addUser(BOB.asString, BOB_PASSWORD)
 
     requestSpecification = baseRequestSpecBuilder(server)
+        .setAuth(new NoAuthScheme)
       .build
   }
 
@@ -49,7 +51,7 @@ trait AuthenticationContract {
   class BothAuthenticationMechanisms {
     @Tag(CategoryTags.BASIC_FEATURE)
     @Test
-    def shouldOKWhenBasicAuthValidAndJWTInvalid(): Unit = {
+    def shouldRespond200WhenBasicAuthValidAndJWTInvalid(): Unit = {
       `given`
         .headers(getHeadersWith(BOB_BASIC_AUTH_HEADER))
         .header(new Header(AUTHORIZATION_HEADER, s"Bearer $UNKNOWN_USER_TOKEN"))
@@ -62,7 +64,7 @@ trait AuthenticationContract {
 
     @Tag(CategoryTags.BASIC_FEATURE)
     @Test
-    def shouldOKWhenJWTAuthValidAndBasicAuthInvalid(): Unit = {
+    def shouldRespond200WhenJWTAuthValidAndBasicAuthInvalid(): Unit = {
       `given`
         .headers(getHeadersWith(new Header(AUTHORIZATION_HEADER, s"Basic ${toBase64(s"this-thing-wrong")}")))
         .header(new Header(AUTHORIZATION_HEADER, s"Bearer $USER_TOKEN"))
@@ -75,7 +77,7 @@ trait AuthenticationContract {
 
     @Tag(CategoryTags.BASIC_FEATURE)
     @Test
-    def shouldOKWhenBothAuthenticationValid(): Unit = {
+    def shouldRespond200WhenBothAuthenticationValid(): Unit = {
       `given`
         .headers(getHeadersWith(BOB_BASIC_AUTH_HEADER))
         .header(new Header(AUTHORIZATION_HEADER, s"Bearer $USER_TOKEN"))
@@ -85,13 +87,10 @@ trait AuthenticationContract {
       .`then`
         .statusCode(SC_OK)
     }
-  }
 
-  @Nested
-  class BasicAuth {
     @Tag(CategoryTags.BASIC_FEATURE)
     @Test
-    def should401WhenNoneAuthenticationValid(): Unit = {
+    def shouldRespond401WhenNoneAuthenticationValid(): Unit = {
       `given`
         .headers(getHeadersWith(new Header(AUTHORIZATION_HEADER, s"Basic ${toBase64(s"this-one-wrong")}")))
         .header(new Header(AUTHORIZATION_HEADER, s"Bearer $UNKNOWN_USER_TOKEN"))
@@ -101,9 +100,12 @@ trait AuthenticationContract {
       .`then`
         .statusCode(SC_UNAUTHORIZED)
     }
+  }
 
+  @Nested
+  class BasicAuth {
     @Test
-    def postShouldRespondUnauthorizedWhenNoAuthorizationHeader(): Unit = {
+    def postShouldRespond401WhenNoAuthorizationHeader(): Unit = {
       given()
         .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
         .body(ECHO_REQUEST_OBJECT)
@@ -138,7 +140,7 @@ trait AuthenticationContract {
     }
 
     @Test
-    def postShouldRespondOKWhenCredentialsWith2DotDomain(): Unit = {
+    def postShouldRespond200WhenCredentialsWith2DotDomain(): Unit = {
       val authHeader: Header = new Header(AUTHORIZATION_HEADER, s"Basic ${toBase64(s"${ALICE.asString}:$ALICE_PASSWORD")}")
       `given`
         .headers(getHeadersWith(authHeader))
@@ -191,7 +193,7 @@ trait AuthenticationContract {
   class JWTAuth {
     @Tag(CategoryTags.BASIC_FEATURE)
     @Test
-    def getMustReturn200WhenValidJwtAuthorizationHeader(): Unit = {
+    def postShouldReturn200WhenValidJwtAuthorizationHeader(): Unit = {
       `given`
         .headers(getHeadersWith(new Header(AUTHORIZATION_HEADER, s"Bearer $USER_TOKEN")))
         .body(ECHO_REQUEST_OBJECT)
@@ -203,7 +205,7 @@ trait AuthenticationContract {
 
     @Test
     @Tag(CategoryTags.BASIC_FEATURE)
-    def getMustReturn401WhenValidUnknownUserJwtAuthorizationHeader(): Unit = {
+    def postShouldReturn401WhenValidUnknownUserJwtAuthorizationHeader(): Unit = {
       val authHeader: Header = new Header(AUTHORIZATION_HEADER, s"Bearer $UNKNOWN_USER_TOKEN")
       `given`
         .headers(getHeadersWith(authHeader))
@@ -216,7 +218,7 @@ trait AuthenticationContract {
 
     @Test
     @Tag(CategoryTags.BASIC_FEATURE)
-    def getMustReturn401WhenInvalidJwtAuthorizationHeader(): Unit = {
+    def postShouldReturn401WhenInvalidJwtAuthorizationHeader(): Unit = {
       `given`
         .headers(getHeadersWith(new Header(AUTHORIZATION_HEADER, s"Bearer $INVALID_JWT_TOKEN")))
         .body(ECHO_REQUEST_OBJECT)
