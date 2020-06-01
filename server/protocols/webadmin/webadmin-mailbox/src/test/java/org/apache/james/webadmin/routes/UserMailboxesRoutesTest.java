@@ -565,7 +565,7 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Mailbox does not exist");
         }
 
         @Test
@@ -619,7 +619,7 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Mailbox does not exist");
         }
 
         @Test
