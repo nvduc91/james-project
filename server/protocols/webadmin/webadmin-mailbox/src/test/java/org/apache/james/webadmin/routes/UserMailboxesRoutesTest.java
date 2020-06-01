@@ -179,7 +179,8 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Invalid get on user mailboxes")
+                .containsEntry("details", "User do not exist");
         }
 
         @Test
@@ -199,7 +200,8 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Invalid get on user mailboxes")
+                .containsEntry("details", "User do not exist");
         }
 
         @Test
@@ -219,7 +221,8 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Invalid get on user mailboxes")
+                .containsEntry("details", "User do not exist");
         }
 
         @Test
@@ -562,7 +565,8 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Invalid get on user mailboxes");
+                .containsEntry("message", "Invalid get on user mailboxes")
+                .containsEntry("details", "Mailboxes do not exist");
         }
 
         @Test

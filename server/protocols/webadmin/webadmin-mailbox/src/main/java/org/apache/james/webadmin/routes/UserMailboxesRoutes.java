@@ -281,6 +281,7 @@ public class UserMailboxesRoutes implements Routes {
                         .statusCode(HttpStatus.NOT_FOUND_404)
                         .type(ErrorType.INVALID_ARGUMENT)
                         .message("Invalid get on user mailboxes")
+                        .cause(new IllegalArgumentException("Mailboxes do not exist"))
                         .haltError();
                 }
             } catch (IllegalStateException e) {
