@@ -120,7 +120,7 @@ public class UserMailboxesService {
     }
 
     private void usernamePreconditions(Username username) throws UsersRepositoryException {
-        Preconditions.checkState(usersRepository.contains(username), "User do not exist");
+        Preconditions.checkState(usersRepository.contains(username), "User does not exist");
     }
 
     private Stream<MailboxMetaData> listUserMailboxes(MailboxSession mailboxSession) throws MailboxException {
