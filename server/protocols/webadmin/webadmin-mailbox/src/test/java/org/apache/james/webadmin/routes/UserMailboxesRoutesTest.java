@@ -224,6 +224,44 @@ class UserMailboxesRoutesTest {
         }
 
         @Test
+        void putShouldThrowWhenMailBoxNameStartWithDot() throws Exception {
+            Map<String, Object> errors = when()
+                .put(".startWithDot")
+            .then()
+                .statusCode(HttpStatus.BAD_REQUEST_400)
+                .contentType(ContentType.JSON)
+                .extract()
+                .body()
+                .jsonPath()
+                .getMap(".");
+
+            assertThat(errors)
+                .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
+                .containsEntry("type", "InvalidArgument")
+                .containsEntry("message", "Attempt to create an invalid mailbox")
+                .containsEntry("details", "'#private:username:.startWithDot' has an empty mailbox name within its hierarchy");
+        }
+
+        @Test
+        void putShouldThrowWhenMailBoxNameEndWithDots() throws Exception {
+            Map<String, Object> errors = when()
+                .put("endWithDot.")
+            .then()
+                .statusCode(HttpStatus.BAD_REQUEST_400)
+                .contentType(ContentType.JSON)
+                .extract()
+                .body()
+                .jsonPath()
+                .getMap(".");
+
+            assertThat(errors)
+                .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
+                .containsEntry("type", "InvalidArgument")
+                .containsEntry("message", "Attempt to create an invalid mailbox")
+                .containsEntry("details", "'#private:username:endWithDot.' has an empty mailbox name within its hierarchy");
+        }
+
+        @Test
         void putShouldThrowWhenInvalidMailBoxName() throws Exception {
             when(usersRepository.contains(USERNAME)).thenReturn(true);
 
