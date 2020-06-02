@@ -206,8 +206,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void putShouldThrowWhenMailBoxNameWithDots() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(true);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME_WITH_DOTS)
             .then()
@@ -222,7 +220,7 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox")
-                .containsEntry("details", "MailboxName contain invalid characters");
+                .containsEntry("details", "'#private:username:my..MailboxName' has an empty mailbox name within its hierarchy");
         }
 
         @Test
@@ -243,7 +241,7 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox")
-                .containsEntry("details", "MailboxName contain invalid characters");
+                .containsEntry("details", "#private:username:myMailboxName# contains one of the forbidden characters %*&#");
         }
 
         @Test
@@ -268,8 +266,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void getShouldReturnUserErrorWithInvalidWildcardMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .get(MAILBOX_NAME + "*")
             .then()
@@ -283,13 +279,12 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Attempt to create an invalid mailbox");
+                .containsEntry("message", "Attempt to test existence of an invalid mailbox")
+                .containsEntry("details", "#private:username:myMailboxName* contains one of the forbidden characters %*&#");
         }
 
         @Test
         void putShouldReturnUserErrorWithInvalidWildcardMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "*")
             .then()
@@ -308,8 +303,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void deleteShouldReturnUserErrorWithInvalidWildcardMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "*")
             .then()
@@ -328,8 +321,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void getShouldReturnUserErrorWithInvalidPercentMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .get(MAILBOX_NAME + "%")
             .then()
@@ -343,13 +334,12 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Attempt to create an invalid mailbox");
+                .containsEntry("message", "Attempt to test existence of an invalid mailbox")
+                .containsEntry("details", "#private:username:myMailboxName% contains one of the forbidden characters %*&#");
         }
 
         @Test
         void putShouldReturnUserErrorWithInvalidPercentMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "%")
             .then()
@@ -368,8 +358,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void deleteShouldReturnUserErrorWithInvalidPercentMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "%")
             .then()
@@ -388,8 +376,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void getShouldReturnUserErrorWithInvalidSharpMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .get(MAILBOX_NAME + "#")
             .then()
@@ -403,13 +389,12 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Attempt to create an invalid mailbox");
+                .containsEntry("message", "Attempt to test existence of an invalid mailbox")
+                .containsEntry("details", "#private:username:myMailboxName# contains one of the forbidden characters %*&#");
         }
 
         @Test
         void putShouldReturnUserErrorWithInvalidSharpMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "#")
             .then()
@@ -428,8 +413,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void deleteShouldReturnUserErrorWithInvalidSharpMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "#")
             .then()
@@ -448,8 +431,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void getShouldReturnUserErrorWithInvalidAndMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .get(MAILBOX_NAME + "&")
             .then()
@@ -463,13 +444,12 @@ class UserMailboxesRoutesTest {
             assertThat(errors)
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
-                .containsEntry("message", "Attempt to create an invalid mailbox");
+                .containsEntry("message", "Attempt to test existence of an invalid mailbox")
+                .containsEntry("details", "#private:username:myMailboxName& contains one of the forbidden characters %*&#");
         }
 
         @Test
         void putShouldReturnUserErrorWithInvalidAndMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "&")
             .then()
@@ -488,8 +468,6 @@ class UserMailboxesRoutesTest {
 
         @Test
         void deleteShouldReturnUserErrorWithInvalidAndMailboxName() throws Exception {
-            when(usersRepository.contains(USERNAME)).thenReturn(false);
-
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME + "&")
             .then()
