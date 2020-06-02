@@ -90,6 +90,8 @@ import reactor.core.publisher.Mono;
 class UserMailboxesRoutesTest {
     private static final Username USERNAME = Username.of("username");
     private static final String MAILBOX_NAME = "myMailboxName";
+    private static final String MAILBOX_NAME_WITH_DOTS = "my..MailboxName";
+    private static final String INVALID_MAILBOX_NAME = "myMailboxName#";
     private static final MailboxPath INBOX = MailboxPath.inbox(USERNAME);
 
     private WebAdminServer webAdminServer;
@@ -200,6 +202,48 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.NOT_FOUND_404)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Invalid get on user mailboxes");
+        }
+
+        @Test
+        void putShouldThrowWhenMailBoxNameWithDots() throws Exception {
+            when(usersRepository.contains(USERNAME)).thenReturn(true);
+
+            Map<String, Object> errors = when()
+                .put(MAILBOX_NAME_WITH_DOTS)
+            .then()
+                .statusCode(HttpStatus.BAD_REQUEST_400)
+                .contentType(ContentType.JSON)
+                .extract()
+                .body()
+                .jsonPath()
+                .getMap(".");
+
+            assertThat(errors)
+                .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
+                .containsEntry("type", "InvalidArgument")
+                .containsEntry("message", "Attempt to create an invalid mailbox")
+                .containsEntry("details", "MailboxName contain invalid characters");
+        }
+
+        @Test
+        void putShouldThrowWhenInvalidMailBoxName() throws Exception {
+            when(usersRepository.contains(USERNAME)).thenReturn(true);
+
+            Map<String, Object> errors = when()
+                .put(INVALID_MAILBOX_NAME)
+            .then()
+                .statusCode(HttpStatus.BAD_REQUEST_400)
+                .contentType(ContentType.JSON)
+                .extract()
+                .body()
+                .jsonPath()
+                .getMap(".");
+
+            assertThat(errors)
+                .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
+                .containsEntry("type", "InvalidArgument")
+                .containsEntry("message", "Attempt to create an invalid mailbox")
+                .containsEntry("details", "MailboxName contain invalid characters");
         }
 
         @Test

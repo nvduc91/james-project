@@ -26,11 +26,16 @@ import com.google.common.base.Strings;
 public class MailboxName {
 
     public static final CharMatcher INVALID_CHARS_MATCHER = CharMatcher.anyOf("%*&#");
+    private static final String CONSECUTIVELY_DOTS = "..";
     private final String mailboxName;
 
     public MailboxName(String mailboxName) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(mailboxName));
-        Preconditions.checkArgument(INVALID_CHARS_MATCHER.matchesNoneOf(mailboxName));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(mailboxName), "MailboxName must not be null or empty");
+        Preconditions.checkArgument(INVALID_CHARS_MATCHER.matchesNoneOf(mailboxName),
+            "MailboxName contain invalid characters");
+        Preconditions.checkArgument(!mailboxName.contains(CONSECUTIVELY_DOTS),
+            "MailboxName contain invalid characters");
+
         this.mailboxName = mailboxName;
     }
 
