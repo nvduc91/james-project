@@ -72,13 +72,10 @@ import org.apache.james.user.api.UsersRepository;
 import org.apache.james.webadmin.WebAdminServer;
 import org.apache.james.webadmin.WebAdminUtils;
 import org.apache.james.webadmin.service.UserMailboxesService;
-import org.apache.james.webadmin.utils.ErrorResponder;
-import org.apache.james.webadmin.utils.ErrorResponder.ErrorType;
 import org.apache.james.webadmin.utils.JsonTransformer;
 import org.apache.mailbox.tools.indexer.ReIndexerImpl;
 import org.apache.mailbox.tools.indexer.ReIndexerPerformer;
 import org.apache.mailbox.tools.indexer.UserReindexingTask;
-import org.eclipse.jetty.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,14 +88,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import reactor.core.publisher.Mono;
 
 class UserMailboxesRoutesTest {
     private static final Username USERNAME = Username.of("username");
     private static final String MAILBOX_NAME = "myMailboxName";
     private static final MailboxPath INBOX = MailboxPath.inbox(USERNAME);
-
+    private static final String ERROR_TYPE_NOTFOUND = "notFound";
+    
     private WebAdminServer webAdminServer;
     private UsersRepository usersRepository;
     private ListeningMessageSearchIndex searchIndex;
@@ -165,7 +162,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Invalid get on user mailboxes");
         }
 
@@ -185,7 +182,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Invalid get on user mailboxes")
                 .containsEntry("details", "User does not exist");
         }
@@ -206,7 +203,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Invalid get on user mailboxes")
                 .containsEntry("details", "User does not exist");
         }
@@ -227,7 +224,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Invalid get on user mailboxes")
                 .containsEntry("details", "User does not exist");
         }
@@ -248,7 +245,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -268,7 +265,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -288,7 +285,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -308,7 +305,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -328,7 +325,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -348,7 +345,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -368,7 +365,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -388,7 +385,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -408,7 +405,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -428,7 +425,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -448,7 +445,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -468,7 +465,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", BAD_REQUEST_400)
-                .containsEntry("type", ErrorType.INVALID_ARGUMENT.getType())
+                .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox");
         }
 
@@ -488,7 +485,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Invalid delete on user mailboxes");
         }
 
@@ -571,7 +568,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Mailbox does not exist");
         }
 
@@ -625,7 +622,7 @@ class UserMailboxesRoutesTest {
 
             assertThat(errors)
                 .containsEntry("statusCode", NOT_FOUND_404)
-                .containsEntry("type", ErrorType.NOT_FOUND.getType())
+                .containsEntry("type", ERROR_TYPE_NOTFOUND)
                 .containsEntry("message", "Mailbox does not exist");
         }
 
@@ -1067,7 +1064,7 @@ class UserMailboxesRoutesTest {
                 .then()
                     .statusCode(BAD_REQUEST_400)
                     .body("statusCode", Matchers.is(400))
-                    .body("type", Matchers.is(ErrorType.INVALID_ARGUMENT.getType()))
+                    .body("type", Matchers.is("InvalidArgument"))
                     .body("message", Matchers.is("Invalid arguments supplied in the user request"))
                     .body("details", Matchers.is("'task' query parameter is compulsory. Supported values are [reIndex]"));
             }
@@ -1081,7 +1078,7 @@ class UserMailboxesRoutesTest {
                 .then()
                     .statusCode(BAD_REQUEST_400)
                     .body("statusCode", Matchers.is(400))
-                    .body("type", Matchers.is(ErrorType.INVALID_ARGUMENT.getType()))
+                    .body("type", Matchers.is("InvalidArgument"))
                     .body("message", Matchers.is("Invalid arguments supplied in the user request"))
                     .body("details", Matchers.is("Invalid value supplied for query parameter 'task': bad. Supported values are [reIndex]"));
             }
@@ -1100,7 +1097,7 @@ class UserMailboxesRoutesTest {
                 .then()
                     .statusCode(BAD_REQUEST_400)
                     .body("statusCode", Matchers.is(400))
-                    .body("type", Matchers.is(ErrorType.INVALID_ARGUMENT.getType()))
+                    .body("type", Matchers.is("InvalidArgument"))
                     .body("message", Matchers.is("Invalid arguments supplied in the user request"))
                     .body("details", Matchers.is("The username should not contain multiple domain delimiter."));
             }
