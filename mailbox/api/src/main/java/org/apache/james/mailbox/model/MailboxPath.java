@@ -161,7 +161,8 @@ public class MailboxPath {
 
     public MailboxPath assertAcceptable(char pathDelimiter) throws MailboxNameException {
         if (hasEmptyNameInHierarchy(pathDelimiter)) {
-            throw new HasEmptyMailboxNameInHierarchyException(String.format("'%s' has an empty mailbox name within its hierarchy", asString()));
+            throw new HasEmptyMailboxNameInHierarchyException(
+                String.format("'%s' has an empty part within its mailbox name considering %s as a delimiter", asString(), pathDelimiter));
         }
         if (nameContainsForbiddenCharacters()) {
             throw new MailboxNameException(asString() + " contains one of the forbidden characters " + INVALID_CHARS);

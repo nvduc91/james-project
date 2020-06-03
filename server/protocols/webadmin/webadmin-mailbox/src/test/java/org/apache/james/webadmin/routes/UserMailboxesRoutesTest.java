@@ -205,7 +205,7 @@ class UserMailboxesRoutesTest {
         }
 
         @Test
-        void putShouldThrowWhenMailBoxNameWithDots() throws Exception {
+        void putShouldThrowWhenMailboxNameWithDots() throws Exception {
             Map<String, Object> errors = when()
                 .put(MAILBOX_NAME_WITH_DOTS)
             .then()
@@ -220,11 +220,11 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox")
-                .containsEntry("details", "'#private:username:my..MailboxName' has an empty mailbox name within its hierarchy");
+                .containsEntry("details", "'#private:username:my..MailboxName' has an empty part within its mailbox name considering . as a delimiter");
         }
 
         @Test
-        void putShouldThrowWhenMailBoxNameStartWithDot() throws Exception {
+        void putShouldThrowWhenMailboxNameStartsWithDot() throws Exception {
             Map<String, Object> errors = when()
                 .put(".startWithDot")
             .then()
@@ -239,11 +239,11 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox")
-                .containsEntry("details", "'#private:username:.startWithDot' has an empty mailbox name within its hierarchy");
+                .containsEntry("details", "'#private:username:.startWithDot' has an empty part within its mailbox name considering . as a delimiter");
         }
 
         @Test
-        void putShouldThrowWhenMailBoxNameEndWithDots() throws Exception {
+        void putShouldThrowWhenMailboxNameEndsWithDots() throws Exception {
             Map<String, Object> errors = when()
                 .put("endWithDot.")
             .then()
@@ -258,11 +258,11 @@ class UserMailboxesRoutesTest {
                 .containsEntry("statusCode", HttpStatus.BAD_REQUEST_400)
                 .containsEntry("type", "InvalidArgument")
                 .containsEntry("message", "Attempt to create an invalid mailbox")
-                .containsEntry("details", "'#private:username:endWithDot.' has an empty mailbox name within its hierarchy");
+                .containsEntry("details", "'#private:username:endWithDot.' has an empty part within its mailbox name considering . as a delimiter");
         }
 
         @Test
-        void putShouldThrowWhenInvalidMailBoxName() throws Exception {
+        void putShouldThrowWhenInvalidMailboxName() throws Exception {
             when(usersRepository.contains(USERNAME)).thenReturn(true);
 
             Map<String, Object> errors = when()
