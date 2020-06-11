@@ -38,6 +38,7 @@ import org.apache.james.blob.api.ObjectNotFoundException;
 import org.apache.james.blob.api.ObjectStoreIOException;
 import org.apache.james.metrics.api.Metric;
 import org.apache.james.metrics.api.MetricFactory;
+import org.apache.james.metrics.api.TimeMetric;
 import org.reactivestreams.Publisher;
 
 import com.google.common.base.Preconditions;
@@ -156,15 +157,15 @@ public class CachedBlobStore implements BlobStore {
         return Mono.just(bucketName)
             .filter(getDefaultBucketName()::equals)
             .flatMap(deleteBucket -> readBytesInDefaultBucket(bucketName, blobId))
-            .switchIfEmpty(Mono.defer(() -> readBytesFromBackend(bucketName, blobId)));
+            .switchIfEmpty(readBytesFromBackend(bucketName, blobId));
     }
 
     private Mono<byte[]> readBytesInDefaultBucket(BucketName bucketName, BlobId blobId) {
         return readFromCache(blobId)
-            .switchIfEmpty(Mono.defer(() -> readBytesFromBackend(bucketName, blobId))
+            .switchIfEmpty(readBytesFromBackend(bucketName, blobId))
                 .filter(this::isAbleToCache)
                 .doOnNext(any -> metricRetrieveMissCount.increment())
-                .flatMap(bytes -> saveInCache(blobId, bytes).then(Mono.just(bytes))));
+                .flatMap(bytes -> saveInCache(blobId, bytes).then(Mono.just(bytes)));
     }
 
     @Override
@@ -271,7 +272,10 @@ public class CachedBlobStore implements BlobStore {
     }
 
     private Mono<byte[]> readBytesFromBackend(BucketName bucketName, BlobId blobId) {
-        return Mono.from(metricFactory.decorateSupplierWithTimerMetric(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME,
-            () -> backend.readBytes(bucketName, blobId)));
+        TimeMetric timer = metricFactory.timer(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME);
+
+        return Mono.from(backend.readBytes(bucketName, blobId))
+            .doOnSuccess(any -> timer.stopAndPublish())
+            .doOnError(ObjectNotFoundException.class, any -> timer.stopAndPublish());
     }
 }
