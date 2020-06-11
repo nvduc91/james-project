@@ -44,7 +44,6 @@ import org.reactivestreams.Publisher;
 import com.google.common.base.Preconditions;
 
 import reactor.core.publisher.Mono;
-import reactor.util.Loggers;
 
 public class CachedBlobStore implements BlobStore {
 
