@@ -261,17 +261,17 @@ public class CachedBlobStore implements BlobStore {
     }
 
     private Mono<byte[]> readFromCache(BlobId blobId) {
-        return Mono.from(metricFactory.runPublishingTimerMetric(BLOBSTORE_CACHED_LATENCY_METRIC_NAME, cache.read(blobId)))
+        return Mono.from(metricFactory.decoratePublisherWithTimerMetric(BLOBSTORE_CACHED_LATENCY_METRIC_NAME, cache.read(blobId)))
             .doOnNext(any -> metricRetrieveHitCount.increment());
     }
 
     private Mono<InputStream> readFromBackend(BucketName bucketName, BlobId blobId) {
-        return Mono.from(metricFactory.runPublishingTimerMetric(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME,
+        return Mono.from(metricFactory.decoratePublisherWithTimerMetric(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME,
             Mono.fromCallable(() -> backend.read(bucketName, blobId))));
     }
 
     private Mono<byte[]> readBytesFromBackend(BucketName bucketName, BlobId blobId) {
-        return Mono.from(metricFactory.runPublishingTimerMetric(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME,
+        return Mono.from(metricFactory.decorateSupplierWithTimerMetric(BLOBSTORE_BACKEND_LATENCY_METRIC_NAME,
             () -> backend.readBytes(bucketName, blobId)));
     }
 }
