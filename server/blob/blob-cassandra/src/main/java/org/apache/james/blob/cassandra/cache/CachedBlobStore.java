@@ -44,6 +44,7 @@ import org.reactivestreams.Publisher;
 import com.google.common.base.Preconditions;
 
 import reactor.core.publisher.Mono;
+import reactor.util.Loggers;
 
 public class CachedBlobStore implements BlobStore {
 
@@ -154,18 +155,23 @@ public class CachedBlobStore implements BlobStore {
 
     @Override
     public Mono<byte[]> readBytes(BucketName bucketName, BlobId blobId) {
-        return Mono.just(bucketName)
-            .filter(getDefaultBucketName()::equals)
-            .flatMap(deleteBucket -> readBytesInDefaultBucket(bucketName, blobId))
-            .switchIfEmpty(readBytesFromBackend(bucketName, blobId));
+        if (getDefaultBucketName().equals(bucketName)) {
+            return readBytesInDefaultBucket(bucketName, blobId);
+        }
+        return readBytesFromBackend(bucketName, blobId);
     }
 
     private Mono<byte[]> readBytesInDefaultBucket(BucketName bucketName, BlobId blobId) {
-        return readFromCache(blobId)
-            .switchIfEmpty(readBytesFromBackend(bucketName, blobId))
-                .filter(this::isAbleToCache)
-                .doOnNext(any -> metricRetrieveMissCount.increment())
-                .flatMap(bytes -> saveInCache(blobId, bytes).then(Mono.just(bytes)));
+        return readFromCache(blobId).switchIfEmpty(
+            readBytesFromBackend(bucketName, blobId)
+                .flatMap(bytes -> {
+                    if (isAbleToCache(bytes)) {
+                        metricRetrieveMissCount.increment();
+                        return saveInCache(blobId, bytes)
+                            .then(Mono.just(bytes));
+                    }
+                    return Mono.just(bytes);
+                }));
     }
 
     @Override

@@ -272,7 +272,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
 
     @Test
     public void shouldNotCacheWhenReadWithBigStream() {
-        BlobId blobId = Mono.from(backend.save(DEFAULT_BUCKETNAME, new ByteArrayInputStream(TWELVE_MEGABYTES), SIZE_BASED)).block();
+        BlobId blobId = Mono.from(testee.save(DEFAULT_BUCKETNAME, new ByteArrayInputStream(TWELVE_MEGABYTES), SIZE_BASED)).block();
 
         SoftAssertions.assertSoftly(soflty -> {
             soflty.assertThat(Mono.from(cache.read(blobId)).blockOptional()).isEmpty();
@@ -478,7 +478,7 @@ public class CachedBlobStoreTest implements BlobStoreContract {
 
         @Test
         void readBytesCacheShouldCountWhenMissed() {
-            BlobId blobId = Mono.from(backend.save(DEFAULT_BUCKETNAME, APPROXIMATELY_FIVE_KILOBYTES, SIZE_BASED)).block();
+            BlobId blobId = Mono.from(testee.save(DEFAULT_BUCKETNAME, APPROXIMATELY_FIVE_KILOBYTES, SIZE_BASED)).block();
 
             Mono.from(cache.remove(blobId)).block();
             Mono.from(testee.readBytes(DEFAULT_BUCKETNAME, blobId)).block();
