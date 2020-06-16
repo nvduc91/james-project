@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.james.GuiceJamesServer;
@@ -364,6 +365,107 @@ public abstract class SetMailboxesMethodTest {
         assertThat(mailboxProbe.listSubscriptions(username.asString()))
             .contains("mySecondBox")
             .doesNotContain(initialMailboxName);
+    }
+
+    @Test
+    public void subscriptionUserShouldBeChangedWhenUpdateParentMailbox() throws Exception {
+        MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
+
+        String secondMailboxName = "second";
+        createSubMailBox(secondMailboxName, parentId.serialize());
+        String secondMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second").serialize();
+
+        String thirdMailBoxName = "third";
+        createSubMailBox(thirdMailBoxName, secondMailboxId);
+        String thirdMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second.third").serialize();
+
+        String fourthMailboxName = "fourth";
+        createSubMailBox(fourthMailboxName, thirdMailboxId);
+
+        String requestBody =
+            "[" +
+                "  [ \"setMailboxes\"," +
+                "    {" +
+                "      \"update\": {" +
+                "        \"" + thirdMailboxId + "\" : {" +
+                "          \"name\" : \"thirdtest\" ,"  +
+                "          \"parentId\" : \"" + secondMailboxId + "\""  +
+                "        }" +
+                "      }" +
+                "    }," +
+                "    \"#0\"" +
+                "  ]" +
+                "]";
+        with()
+            .header("Authorization", accessToken.asString())
+            .body(requestBody)
+            .post("/jmap");
+
+        assertThat(mailboxProbe.listSubscriptions(username.asString()))
+            .contains("root.second.thirdtest.fourth")
+            .doesNotContain("root.second.third.fourth");
+    }
+
+    @Test
+    public void subscriptionUserShouldBeChangedAllChildWhenUpdateParentMailbox() throws Exception {
+        MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
+
+        String secondMailboxName = "second";
+        createSubMailBox(secondMailboxName, parentId.serialize());
+        String secondMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second").serialize();
+
+        String thirdMailBoxName = "third";
+        createSubMailBox(thirdMailBoxName, secondMailboxId);
+        String thirdMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second.third").serialize();
+
+        String fourthMailboxName = "fourth";
+        createSubMailBox(fourthMailboxName, thirdMailboxId);
+
+        String requestBody =
+            "[" +
+                "  [ \"setMailboxes\"," +
+                "    {" +
+                "      \"update\": {" +
+                "        \"" + secondMailboxId + "\" : {" +
+                "          \"name\" : \"secondtest\" ,"  +
+                "          \"parentId\" : \"" + parentId.serialize() + "\""  +
+                "        }" +
+                "      }" +
+                "    }," +
+                "    \"#0\"" +
+                "  ]" +
+                "]";
+        with()
+            .header("Authorization", accessToken.asString())
+            .body(requestBody)
+            .post("/jmap");
+
+        assertThat(mailboxProbe.listSubscriptions(username.asString()))
+            .contains("root.secondtest.third.fourth")
+            .doesNotContain("root.second.third.fourth");
+    }
+
+    private void createSubMailBox(String childMailboxName, String parentMailboxId) {
+        String createChildMailbox =
+            "[" +
+                "  [ \"setMailboxes\"," +
+                "    {" +
+                "      \"create\": {" +
+                "        \"whatever\" : {" +
+                "          \"name\" : \"" + childMailboxName + "\"," +
+                "          \"parentId\" : \"" + parentMailboxId + "\"" +
+                "        }" +
+                "      }" +
+                "    }," +
+                "    \"#0\"" +
+                "  ]" +
+                "]";
+
+        given()
+            .header("Authorization", accessToken.asString())
+            .body(createChildMailbox)
+        .when()
+            .post("/jmap");
     }
 
     @Test
