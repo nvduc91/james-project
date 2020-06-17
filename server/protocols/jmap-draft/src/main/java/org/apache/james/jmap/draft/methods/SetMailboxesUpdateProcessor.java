@@ -21,7 +21,6 @@ package org.apache.james.jmap.draft.methods;
 
 import static org.apache.james.jmap.draft.methods.Method.JMAP_PREFIX;
 
-import java.util.List;
 import java.util.Optional;
 
 import javax.inject.Inject;
@@ -42,7 +41,6 @@ import org.apache.james.mailbox.MailboxManager;
 import org.apache.james.mailbox.MailboxSession;
 import org.apache.james.mailbox.MessageManager;
 import org.apache.james.mailbox.Role;
-import org.apache.james.mailbox.SubscriptionManager;
 import org.apache.james.mailbox.exception.DifferentDomainException;
 import org.apache.james.mailbox.exception.MailboxException;
 import org.apache.james.mailbox.exception.MailboxExistsException;
@@ -50,10 +48,7 @@ import org.apache.james.mailbox.exception.MailboxNameException;
 import org.apache.james.mailbox.exception.MailboxNotFoundException;
 import org.apache.james.mailbox.exception.TooLongMailboxNameException;
 import org.apache.james.mailbox.model.MailboxId;
-import org.apache.james.mailbox.model.MailboxMetaData;
 import org.apache.james.mailbox.model.MailboxPath;
-import org.apache.james.mailbox.model.search.MailboxQuery;
-import org.apache.james.mailbox.model.search.PrefixedWildcard;
 import org.apache.james.metrics.api.MetricFactory;
 import org.apache.james.metrics.api.TimeMetric;
 import org.apache.james.util.OptionalUtils;
@@ -74,14 +69,12 @@ public class SetMailboxesUpdateProcessor implements SetMailboxesProcessor {
     private final MailboxManager mailboxManager;
     private final MailboxFactory mailboxFactory;
     private final MetricFactory metricFactory;
-    private final SubscriptionManager subscriptionManager;
 
     @Inject
     @VisibleForTesting
-    SetMailboxesUpdateProcessor(MailboxUtils mailboxUtils, MailboxManager mailboxManager, SubscriptionManager subscriptionManager, MailboxFactory mailboxFactory, MetricFactory metricFactory) {
+    SetMailboxesUpdateProcessor(MailboxUtils mailboxUtils, MailboxManager mailboxManager, MailboxFactory mailboxFactory, MetricFactory metricFactory) {
         this.mailboxUtils = mailboxUtils;
         this.mailboxManager = mailboxManager;
-        this.subscriptionManager = subscriptionManager;
         this.mailboxFactory = mailboxFactory;
         this.metricFactory = metricFactory;
     }
@@ -261,8 +254,6 @@ public class SetMailboxesUpdateProcessor implements SetMailboxesProcessor {
 
     private void updateMailbox(Mailbox mailbox, MailboxUpdateRequest updateRequest, MailboxSession mailboxSession) throws MailboxException {
         MailboxPath originMailboxPath = mailboxManager.getMailbox(mailbox.getId(), mailboxSession).getMailboxPath();
-        List<MailboxMetaData> originalMailboxPathWithChild = findMailboxMetadataListIncludeChild(originMailboxPath, mailboxSession);
-
         MailboxPath destinationMailboxPath = computeNewMailboxPath(mailbox, originMailboxPath, updateRequest, mailboxSession);
 
         if (updateRequest.getSharedWith().isPresent()) {
@@ -275,24 +266,8 @@ public class SetMailboxesUpdateProcessor implements SetMailboxesProcessor {
         }
 
         if (!originMailboxPath.equals(destinationMailboxPath)) {
-            for (MailboxMetaData mailboxMetaData: originalMailboxPathWithChild) {
-                subscriptionManager.unsubscribe(mailboxSession, mailboxMetaData.getPath().getName());
-            }
-
-            mailboxManager.renameMailbox(mailbox.getId(), destinationMailboxPath, mailboxSession);
-            List<MailboxMetaData> destinationMailboxPathWithChild = findMailboxMetadataListIncludeChild(destinationMailboxPath, mailboxSession);
-            for (MailboxMetaData mailboxMetaData: destinationMailboxPathWithChild) {
-                subscriptionManager.subscribe(mailboxSession, mailboxMetaData.getPath().getName());
-            }
+            mailboxManager.renameMailbox(mailbox.getId(), destinationMailboxPath, MailboxManager.RenameOption.RENAME_SUBSCRIPTIONS, mailboxSession);
         }
-    }
-
-    private List<MailboxMetaData> findMailboxMetadataListIncludeChild(MailboxPath mailboxPath, MailboxSession mailboxSession) throws MailboxException {
-        MailboxQuery originMailboxIncludeChildrenMailboxQuery = MailboxQuery.builder()
-            .username(mailboxSession.getUser())
-            .expression(new PrefixedWildcard(mailboxPath.getName()))
-            .build();
-        return mailboxManager.search(originMailboxIncludeChildrenMailboxQuery, mailboxSession);
     }
 
     private MailboxPath computeNewMailboxPath(Mailbox mailbox, MailboxPath originMailboxPath, MailboxUpdateRequest updateRequest, MailboxSession mailboxSession) throws MailboxException {

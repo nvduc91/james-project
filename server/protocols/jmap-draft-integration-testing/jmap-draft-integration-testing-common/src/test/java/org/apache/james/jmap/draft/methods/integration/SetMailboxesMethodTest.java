@@ -21,6 +21,7 @@ package org.apache.james.jmap.draft.methods.integration;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.with;
+import static io.restassured.http.ContentType.JSON;
 import static org.apache.james.jmap.HttpJmapAuthentication.authenticateJamesUser;
 import static org.apache.james.jmap.JMAPTestingConstants.ARGUMENTS;
 import static org.apache.james.jmap.JMAPTestingConstants.DOMAIN;
@@ -44,7 +45,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.james.GuiceJamesServer;
@@ -75,6 +75,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 
 public abstract class SetMailboxesMethodTest {
 
@@ -82,7 +83,7 @@ public abstract class SetMailboxesMethodTest {
     private static final String WRITE = String.valueOf(Right.Write.asCharacter());
     private static final String DELETE_MESSAGES = String.valueOf(Right.DeleteMessages.asCharacter());
 
-    private static int MAILBOX_NAME_LENGTH_64K = 65536;
+    private static final int MAILBOX_NAME_LENGTH_64K = 65536;
 
     protected abstract GuiceJamesServer createJmapServer() throws IOException;
 
@@ -339,10 +340,7 @@ public abstract class SetMailboxesMethodTest {
 
     @Test
     public void subscriptionUserShouldBeChangedWhenUpdateMailbox() throws Exception {
-        mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
-
-        String initialMailboxName = "root.myBox";
-        MailboxId mailboxId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), initialMailboxName);
+        MailboxId mailboxId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
 
         String requestBody =
             "[" +
@@ -364,7 +362,7 @@ public abstract class SetMailboxesMethodTest {
 
         assertThat(mailboxProbe.listSubscriptions(username.asString()))
             .contains("mySecondBox")
-            .doesNotContain(initialMailboxName);
+            .doesNotContain("root");
     }
 
     @Test
@@ -372,15 +370,13 @@ public abstract class SetMailboxesMethodTest {
         MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
 
         String secondMailboxName = "second";
-        createSubMailBox(secondMailboxName, parentId.serialize());
-        String secondMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second").serialize();
+        String secondMailboxId = createSubMailBox(parentId.serialize(), secondMailboxName);
 
         String thirdMailBoxName = "third";
-        createSubMailBox(thirdMailBoxName, secondMailboxId);
-        String thirdMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second.third").serialize();
+        String thirdMailboxId = createSubMailBox(secondMailboxId, thirdMailBoxName);
 
         String fourthMailboxName = "fourth";
-        createSubMailBox(fourthMailboxName, thirdMailboxId);
+        createSubMailBox(thirdMailboxId, fourthMailboxName);
 
         String requestBody =
             "[" +
@@ -407,19 +403,17 @@ public abstract class SetMailboxesMethodTest {
     }
 
     @Test
-    public void subscriptionUserShouldBeChangedAllChildWhenUpdateParentMailbox() throws Exception {
+    public void subscriptionUserShouldBeChangedForAllChildrenWhenUpdateParentMailbox() throws Exception {
         MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
 
         String secondMailboxName = "second";
-        createSubMailBox(secondMailboxName, parentId.serialize());
-        String secondMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second").serialize();
+        String secondMailboxId = createSubMailBox(parentId.serialize(), secondMailboxName);
 
         String thirdMailBoxName = "third";
-        createSubMailBox(thirdMailBoxName, secondMailboxId);
-        String thirdMailboxId = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, username.asString(), "root.second.third").serialize();
+        String thirdMailboxId = createSubMailBox(secondMailboxId, thirdMailBoxName);
 
         String fourthMailboxName = "fourth";
-        createSubMailBox(fourthMailboxName, thirdMailboxId);
+        createSubMailBox(thirdMailboxId, fourthMailboxName);
 
         String requestBody =
             "[" +
@@ -445,13 +439,14 @@ public abstract class SetMailboxesMethodTest {
             .doesNotContain("root.second.third.fourth");
     }
 
-    private void createSubMailBox(String childMailboxName, String parentMailboxId) {
+    private String createSubMailBox(String parentMailboxId, String childMailboxName) {
+        String mailboxName = "whatever";
         String createChildMailbox =
             "[" +
                 "  [ \"setMailboxes\"," +
                 "    {" +
                 "      \"create\": {" +
-                "        \"whatever\" : {" +
+                "        \"" + mailboxName + "\" : {" +
                 "          \"name\" : \"" + childMailboxName + "\"," +
                 "          \"parentId\" : \"" + parentMailboxId + "\"" +
                 "        }" +
@@ -461,11 +456,17 @@ public abstract class SetMailboxesMethodTest {
                 "  ]" +
                 "]";
 
-        given()
+        Response response = given()
             .header("Authorization", accessToken.asString())
             .body(createChildMailbox)
         .when()
-            .post("/jmap");
+            .post("/jmap")
+        .then()
+            .contentType(JSON)
+        .extract()
+            .response();
+
+        return response.jsonPath().get("[0][1].created." + mailboxName + ".id");
     }
 
     @Test
