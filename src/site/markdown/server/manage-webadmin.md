@@ -2625,7 +2625,7 @@ to the response for the supported values (only work with "application/json" Acce
  - perRecipientsHeaders
 
 ```
-curl -XGET http://localhost:8000/mailRepositories/file%3A%2F%2Fvar%2Fmail%2Ferror%2F/mails/mail-key-1?additionalFields=attributes,headers,textBody,htmlBody,messageSize,perRecipientsHeaders
+curl -XGET http://ip:port/mailRepositories/file%3A%2F%2Fvar%2Fmail%2Ferror%2F/mails/mail-key-1?additionalFields=attributes,headers,textBody,htmlBody,messageSize,perRecipientsHeaders
 ```
 
 Give the following kind of response:
