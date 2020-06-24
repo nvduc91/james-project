@@ -1270,12 +1270,9 @@ public class LuceneMessageSearchIndex extends ListeningMessageSearchIndex {
 
     @Override
     public Mono<Void> delete(MailboxSession session, MailboxId mailboxId, Collection<MessageUid> expungedUids) {
-        return Mono.fromRunnable(Throwing.runnable(() -> {
-            Collection<MessageRange> messageRanges = MessageRange.toRanges(expungedUids);
-            for (MessageRange messageRange : messageRanges) {
-                delete(mailboxId, messageRange);
-            }
-        }));
+        return Mono.fromRunnable(Throwing.runnable(() -> MessageRange.toRanges(expungedUids)
+            .forEach(Throwing.<MessageRange>consumer(messageRange -> delete(mailboxId, messageRange))
+                .sneakyThrow())));
     }
 
     @Override

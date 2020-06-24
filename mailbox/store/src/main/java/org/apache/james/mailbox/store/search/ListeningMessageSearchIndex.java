@@ -82,15 +82,11 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
         } else if (event instanceof Expunged) {
             Expunged expunged = (Expunged) event;
 
-            return factory.getMailboxMapper(session)
-                .findMailboxById(mailboxId)
-                .flatMap(mailbox -> delete(session, mailbox.getMailboxId(), expunged.getUids()));
+            return Mono.fromCallable(() -> delete(session, mailboxId, expunged.getUids())).then();
         } else if (event instanceof FlagsUpdated) {
             FlagsUpdated flagsUpdated = (FlagsUpdated) event;
 
-            return factory.getMailboxMapper(session)
-                .findMailboxById(mailboxId)
-                .flatMap(mailbox -> update(session, mailbox.getMailboxId(), flagsUpdated.getUpdatedFlags()));
+            return Mono.fromCallable(() -> update(session, mailboxId, flagsUpdated.getUpdatedFlags())).then();
         } else if (event instanceof MailboxDeletion) {
             return deleteAll(session, mailboxId);
         } else {
@@ -123,7 +119,7 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
      * Delete the concerned UIDs for the given {@link Mailbox} from the index
      *
      * @param session      The mailbox session performing the expunge
-     * @param mailboxId      mailbox on which the expunge was performed
+     * @param mailboxId    mailboxId on which the expunge was performed
      * @param expungedUids UIDS to be deleted
      */
     public abstract Mono<Void> delete(MailboxSession session, MailboxId mailboxId, Collection<MessageUid> expungedUids);
@@ -140,7 +136,7 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
      * Update the messages concerned by the updated flags list for the given {@link Mailbox}
      *
      * @param session          session that performed the update
-     * @param mailboxId          id of mailbox containing the updated messages
+     * @param mailboxId        mailboxId on which the expunge was performed
      * @param updatedFlagsList list of flags that were updated
      */
     public abstract Mono<Void> update(MailboxSession session, MailboxId mailboxId, List<UpdatedFlags> updatedFlagsList);
