@@ -84,13 +84,13 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
 
             return factory.getMailboxMapper(session)
                 .findMailboxById(mailboxId)
-                .flatMap(mailbox -> delete(session, mailbox, expunged.getUids()));
+                .flatMap(mailbox -> delete(session, mailbox.getMailboxId(), expunged.getUids()));
         } else if (event instanceof FlagsUpdated) {
             FlagsUpdated flagsUpdated = (FlagsUpdated) event;
 
             return factory.getMailboxMapper(session)
                 .findMailboxById(mailboxId)
-                .flatMap(mailbox -> update(session, mailbox, flagsUpdated.getUpdatedFlags()));
+                .flatMap(mailbox -> update(session, mailbox.getMailboxId(), flagsUpdated.getUpdatedFlags()));
         } else if (event instanceof MailboxDeletion) {
             return deleteAll(session, mailboxId);
         } else {
@@ -123,10 +123,10 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
      * Delete the concerned UIDs for the given {@link Mailbox} from the index
      *
      * @param session      The mailbox session performing the expunge
-     * @param mailbox      mailbox on which the expunge was performed
+     * @param mailboxId      mailbox on which the expunge was performed
      * @param expungedUids UIDS to be deleted
      */
-    public abstract Mono<Void> delete(MailboxSession session, Mailbox mailbox, Collection<MessageUid> expungedUids);
+    public abstract Mono<Void> delete(MailboxSession session, MailboxId mailboxId, Collection<MessageUid> expungedUids);
 
     /**
      * Delete the messages contained in the given {@link Mailbox} from the index
@@ -140,10 +140,10 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
      * Update the messages concerned by the updated flags list for the given {@link Mailbox}
      *
      * @param session          session that performed the update
-     * @param mailbox          mailbox containing the updated messages
+     * @param mailboxId          id of mailbox containing the updated messages
      * @param updatedFlagsList list of flags that were updated
      */
-    public abstract Mono<Void> update(MailboxSession session, Mailbox mailbox, List<UpdatedFlags> updatedFlagsList);
+    public abstract Mono<Void> update(MailboxSession session, MailboxId mailboxId, List<UpdatedFlags> updatedFlagsList);
 
     /**
      * Retrieves flags of an indexed message
