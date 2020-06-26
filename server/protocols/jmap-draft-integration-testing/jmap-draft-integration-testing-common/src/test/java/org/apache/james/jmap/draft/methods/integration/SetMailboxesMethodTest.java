@@ -340,14 +340,17 @@ public abstract class SetMailboxesMethodTest {
 
     @Test
     public void subscriptionUserShouldBeChangedWhenUpdateMailbox() throws Exception {
-        MailboxId mailboxId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
+        MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
+
+        String initialMailboxName = "myBox";
+        String mailboxId = createSubMailBox(parentId.serialize(), initialMailboxName);
 
         String requestBody =
             "[" +
                 "  [ \"setMailboxes\"," +
                 "    {" +
                 "      \"update\": {" +
-                "        \"" + mailboxId.serialize() + "\" : {" +
+                "        \"" + mailboxId + "\" : {" +
                 "          \"name\" : \"mySecondBox\"" +
                 "        }" +
                 "      }" +
@@ -362,7 +365,7 @@ public abstract class SetMailboxesMethodTest {
 
         assertThat(mailboxProbe.listSubscriptions(username.asString()))
             .contains("mySecondBox")
-            .doesNotContain("root");
+            .doesNotContain(initialMailboxName);
     }
 
     @Test
