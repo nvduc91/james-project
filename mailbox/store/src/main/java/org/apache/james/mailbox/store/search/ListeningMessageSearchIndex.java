@@ -82,11 +82,11 @@ public abstract class ListeningMessageSearchIndex implements MessageSearchIndex,
         } else if (event instanceof Expunged) {
             Expunged expunged = (Expunged) event;
 
-            return Mono.fromCallable(() -> delete(session, mailboxId, expunged.getUids())).then();
+            return delete(session, mailboxId, expunged.getUids());
         } else if (event instanceof FlagsUpdated) {
             FlagsUpdated flagsUpdated = (FlagsUpdated) event;
 
-            return Mono.fromCallable(() -> update(session, mailboxId, flagsUpdated.getUpdatedFlags())).then();
+            return update(session, mailboxId, flagsUpdated.getUpdatedFlags());
         } else if (event instanceof MailboxDeletion) {
             return deleteAll(session, mailboxId);
         } else {
