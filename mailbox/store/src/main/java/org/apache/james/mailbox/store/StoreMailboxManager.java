@@ -488,8 +488,8 @@ public class StoreMailboxManager implements MailboxManager {
                 Subscription subscription = new Subscription(session.getUser(), renamedResult.getOriginPath().getName());
                 if (subscriptionsForUser.contains(subscription)) {
                     subscriptionMapper.delete(subscription);
+                    subscriptionMapper.save(new Subscription(session.getUser(), renamedResult.getDestinationPath().getName()));
                 }
-                subscriptionMapper.save(new Subscription(session.getUser(), renamedResult.getDestinationPath().getName()));
             }).sneakyThrow());
         }
         return renamedResults;
