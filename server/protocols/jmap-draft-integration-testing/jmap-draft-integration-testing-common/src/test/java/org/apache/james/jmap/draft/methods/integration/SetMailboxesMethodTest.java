@@ -340,10 +340,8 @@ public abstract class SetMailboxesMethodTest {
 
     @Test
     public void subscriptionUserShouldBeChangedWhenUpdateMailbox() throws Exception {
-        MailboxId parentId = mailboxProbe.createMailbox(MailboxConstants.USER_NAMESPACE, username.asString(), "root");
-
         String initialMailboxName = "myBox";
-        String mailboxId = createSubMailBox(parentId.serialize(), initialMailboxName);
+        String mailboxId = createMailBoxThroughJMAP(initialMailboxName);
 
         String requestBody =
             "[" +
@@ -472,6 +470,34 @@ public abstract class SetMailboxesMethodTest {
         return response.jsonPath().get("[0][1].created." + mailboxName + ".id");
     }
 
+    private String createMailBoxThroughJMAP(String mailboxPath) {
+        String mailboxName = "whatever";
+        String createChildMailbox =
+            "[" +
+                "  [ \"setMailboxes\"," +
+                "    {" +
+                "      \"create\": {" +
+                "        \"" + mailboxName + "\" : {" +
+                "          \"name\" : \"" + mailboxPath + "\"" +
+                "        }" +
+                "      }" +
+                "    }," +
+                "    \"#0\"" +
+                "  ]" +
+                "]";
+
+        Response response = given()
+            .header("Authorization", accessToken.asString())
+            .body(createChildMailbox)
+        .when()
+            .post("/jmap")
+        .then()
+            .contentType(JSON)
+        .extract()
+            .response();
+
+        return response.jsonPath().get("[0][1].created." + mailboxName + ".id");
+    }
     @Test
     public void subscriptionUserShouldBeChangedWhenCreateThenUpdateMailboxNameWithJMAP() throws Exception {
         String requestBody =
