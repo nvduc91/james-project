@@ -441,13 +441,13 @@ public abstract class SetMailboxesMethodTest {
     }
 
     private String createSubMailBox(String parentMailboxId, String childMailboxName) {
-        String mailboxName = "whatever";
+        String clientIdentifier = "whatever";
         String createChildMailbox =
             "[" +
                 "  [ \"setMailboxes\"," +
                 "    {" +
                 "      \"create\": {" +
-                "        \"" + mailboxName + "\" : {" +
+                "        \"" + clientIdentifier + "\" : {" +
                 "          \"name\" : \"" + childMailboxName + "\"," +
                 "          \"parentId\" : \"" + parentMailboxId + "\"" +
                 "        }" +
@@ -467,18 +467,18 @@ public abstract class SetMailboxesMethodTest {
         .extract()
             .response();
 
-        return response.jsonPath().get("[0][1].created." + mailboxName + ".id");
+        return response.jsonPath().get("[0][1].created." + clientIdentifier + ".id");
     }
 
-    private String createMailBoxThroughJMAP(String mailboxPath) {
-        String mailboxName = "whatever";
-        String createChildMailbox =
+    private String createMailBoxThroughJMAP(String mailboxName) {
+        String clientIdentifier = "whatever";
+        String createMailbox =
             "[" +
                 "  [ \"setMailboxes\"," +
                 "    {" +
                 "      \"create\": {" +
-                "        \"" + mailboxName + "\" : {" +
-                "          \"name\" : \"" + mailboxPath + "\"" +
+                "        \"" + clientIdentifier + "\" : {" +
+                "          \"name\" : \"" + mailboxName + "\"" +
                 "        }" +
                 "      }" +
                 "    }," +
@@ -488,7 +488,7 @@ public abstract class SetMailboxesMethodTest {
 
         Response response = given()
             .header("Authorization", accessToken.asString())
-            .body(createChildMailbox)
+            .body(createMailbox)
         .when()
             .post("/jmap")
         .then()
@@ -496,8 +496,9 @@ public abstract class SetMailboxesMethodTest {
         .extract()
             .response();
 
-        return response.jsonPath().get("[0][1].created." + mailboxName + ".id");
+        return response.jsonPath().get("[0][1].created." + clientIdentifier + ".id");
     }
+
     @Test
     public void subscriptionUserShouldBeChangedWhenCreateThenUpdateMailboxNameWithJMAP() throws Exception {
         String requestBody =
