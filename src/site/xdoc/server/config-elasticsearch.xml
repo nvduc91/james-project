@@ -116,7 +116,8 @@
       </dl>
 
       <p>
-          ElasticSearch component can be disabled. This is controlled via the <code>enabled</code> property (boolean, defaults
+          ElasticSearch component can be disabled but considered it would make search feature wont work.
+          This is controlled via the <code>enabled</code> property (boolean, defaults
           to true). Setting this configuration parameter to <code>false</code> will effectively disable ElasticSearch, no
           further indexation will be done however searches will rely on the scrolling search, leading to expensive and longer
           searches. Disabling ElasticSearch requires no extra action, however
