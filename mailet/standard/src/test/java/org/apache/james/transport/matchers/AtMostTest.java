@@ -66,16 +66,11 @@ class AtMostTest {
 
     @Nested
     class WrongConditionConfigurationTest {
-        private static final String NO_VALUE_MATCHER = "NoValueMatcher";
-        private static final String RETRY_WITHOUT_CONDITION_NAME = ":3";
-        private static final String RETRY_WITHOUT_CONDITION_VALUE = "randomName:";
-        private static final String RETRY_WITH_SPACE_IN_CONDITION = "  :  ";
-
         @Test
         void shouldThrowWhenMatchersConfigWithOutConditionValue() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
-                .condition(RETRY_WITHOUT_CONDITION_VALUE)
+                .matcherName("NoValueMatcher")
+                .condition("randomName:")
                 .build()))
                 .isInstanceOf(MessagingException.class);
         }
@@ -83,7 +78,7 @@ class AtMostTest {
         @Test
         void shouldThrowWhenMatchersConfigWithConditionValueAsWord() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
+                .matcherName("NoValueMatcher")
                 .condition("value")
                 .build()))
                 .isInstanceOf(MessagingException.class);
@@ -92,7 +87,7 @@ class AtMostTest {
         @Test
         void shouldThrowWhenMatchersConfigWithNegativeConditionValue() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
+                .matcherName("NoValueMatcher")
                 .condition("-87")
                 .build()))
                 .isInstanceOf(MessagingException.class);
@@ -101,8 +96,8 @@ class AtMostTest {
         @Test
         void shouldThrowWhenMatchersConfigWithoutConditionValue() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
-                .condition(RETRY_WITHOUT_CONDITION_VALUE)
+                .matcherName("NoValueMatcher")
+                .condition("randomName:")
                 .build()))
                 .isInstanceOf(MessagingException.class);
         }
@@ -110,8 +105,8 @@ class AtMostTest {
         @Test
         void shouldThrowWhenMatchersConfigWithoutConditionName() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
-                .condition(RETRY_WITHOUT_CONDITION_NAME)
+                .matcherName("NoValueMatcher")
+                .condition(":3")
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class);
         }
@@ -119,8 +114,8 @@ class AtMostTest {
         @Test
         void shouldThrowWhenMatchersConfigNameAsSpace() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName(NO_VALUE_MATCHER)
-                .condition(RETRY_WITH_SPACE_IN_CONDITION)
+                .matcherName("NoValueMatcher")
+                .condition("  :  ")
                 .build()))
                 .isInstanceOf(MessagingException.class);
         }
@@ -128,10 +123,6 @@ class AtMostTest {
 
     @Nested
     class MultiplesMatcherConfigurationTest {
-        private static final String MULTIPLE_MATCHERS = "MultipleMatchers";
-        private static final String RETRY_3_TIMES = "randomName:3";
-        private static final String RETRY_5_TIMES = "randomName:5";
-
         private AtMost multipleMatchers;
 
         @BeforeEach
@@ -140,15 +131,15 @@ class AtMostTest {
             multipleMatchers.init(
                 FakeMatcherConfig.builder()
                     .matcherName("MultipleMatchers")
-                    .condition(RETRY_3_TIMES)
-                    .condition(RETRY_5_TIMES)
+                    .condition("randomName:3")
+                    .condition("randomName:5")
                     .build());
         }
 
         @Test
         void matchersShouldMatchWhenNoRetries() throws MessagingException {
             Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of(MULTIPLE_MATCHERS), AttributeValue.of(0)));
+            mail.setAttribute(new Attribute(AttributeName.of("MultipleMatchers"), AttributeValue.of(0)));
 
             Collection<MailAddress> actual = multipleMatchers.match(mail);
 
@@ -158,7 +149,7 @@ class AtMostTest {
         @Test
         void matchersShouldStopWhenAMatcherReachedLimit() throws MessagingException {
             Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of(MULTIPLE_MATCHERS), AttributeValue.of(3)));
+            mail.setAttribute(new Attribute(AttributeName.of("MultipleMatchers"), AttributeValue.of(3)));
 
             Collection<MailAddress> actual = multipleMatchers.match(mail);
 
