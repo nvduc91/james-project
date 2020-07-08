@@ -65,7 +65,7 @@ class AtMostTest {
     }
 
     @Nested
-    class WrongConditionConfigurationTest {
+    class InvalidConditionConfigurationTest {
         @Test
         void shouldThrowWhenMatchersConfigWithOutConditionValue() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
@@ -76,7 +76,7 @@ class AtMostTest {
         }
 
         @Test
-        void shouldThrowWhenMatchersConfigWithConditionValueAsWord() {
+        void shouldThrowWhenMatchersConfigWithInvalidConditionValue() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
                 .matcherName("NoValueMatcher")
                 .condition("value")
@@ -94,16 +94,7 @@ class AtMostTest {
         }
 
         @Test
-        void shouldThrowWhenMatchersConfigWithoutConditionValue() {
-            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                .matcherName("NoValueMatcher")
-                .condition("randomName:")
-                .build()))
-                .isInstanceOf(MessagingException.class);
-        }
-
-        @Test
-        void shouldThrowWhenMatchersConfigWithoutConditionName() {
+        void shouldThrowWhenMatchersConfigWithOutConditionName() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
                 .matcherName("NoValueMatcher")
                 .condition(":3")
@@ -122,46 +113,64 @@ class AtMostTest {
     }
 
     @Nested
-    class MultiplesMatcherConfigurationTest {
-        private AtMost multipleMatchers;
+    class MultipleMatchersConfigurationTest {
+        private AtMost atMost3;
+        private AtMost atMost5;
 
         @BeforeEach
         void setup() throws MessagingException {
-            this.multipleMatchers = new AtMost();
-            multipleMatchers.init(
+            this.atMost3 = new AtMost();
+            atMost3.init(
                 FakeMatcherConfig.builder()
-                    .matcherName("MultipleMatchers")
-                    .condition("randomName:3")
-                    .condition("randomName:5")
+                    .matcherName("AtMost")
+                    .condition("AtMost:3")
+                    .build());
+
+            this.atMost5 = new AtMost();
+            atMost5.init(
+                FakeMatcherConfig.builder()
+                    .matcherName("AtMost")
+                    .condition("AtMost:5")
                     .build());
         }
 
         @Test
         void matchersShouldMatchWhenNoRetries() throws MessagingException {
             Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of("MultipleMatchers"), AttributeValue.of(0)));
+            mail.setAttribute(new Attribute(AttributeName.of("AtMost"), AttributeValue.of(1)));
 
-            Collection<MailAddress> actual = multipleMatchers.match(mail);
-
-            assertThat(actual).containsOnly(RECIPIENT1);
+            SoftAssertions.assertSoftly(Throwing.consumer(
+                softly -> {
+                    softly.assertThat(atMost3.match(mail)).contains(RECIPIENT1);
+                    softly.assertThat(atMost3.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost3.match(mail)).isEmpty();
+                    softly.assertThat(atMost5.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost5.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost5.match(mail)).isEmpty();
+                }));
         }
 
         @Test
         void matchersShouldStopWhenAMatcherReachedLimit() throws MessagingException {
             Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of("MultipleMatchers"), AttributeValue.of(3)));
+            mail.setAttribute(new Attribute(AttributeName.of("AtMost"), AttributeValue.of(2)));
 
-            Collection<MailAddress> actual = multipleMatchers.match(mail);
-
-            assertThat(actual).containsOnly(RECIPIENT1);
+            SoftAssertions.assertSoftly(Throwing.consumer(
+                softly -> {
+                    softly.assertThat(atMost3.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost3.match(mail)).isEmpty();
+                    softly.assertThat(atMost5.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost5.match(mail)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost5.match(mail)).isEmpty();
+                }));
         }
 
         @Test
         void matchersShouldMatchWhenLimitNotReached() throws MessagingException {
             Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of("randomName"), AttributeValue.of(2)));
+            mail.setAttribute(new Attribute(AttributeName.of("AtMost"), AttributeValue.of(2)));
 
-            Collection<MailAddress> actual = multipleMatchers.match(mail);
+            Collection<MailAddress> actual = atMost3.match(mail);
 
             assertThat(actual).containsOnly(RECIPIENT1);
         }
@@ -211,7 +220,7 @@ class AtMostTest {
         @Test
         void shouldThrowWithEmptyCondition() {
             FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-                .matcherName("AtMostFailureRetries")
+                .matcherName("AtMost")
                 .build();
 
             assertThatThrownBy(() -> matcher.init(matcherConfig))
@@ -221,7 +230,7 @@ class AtMostTest {
         @Test
         void shouldThrowWithInvalidCondition() {
             FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-                .matcherName("AtMostFailureRetries")
+                .matcherName("AtMost")
                 .condition("invalid")
                 .build();
 
@@ -232,7 +241,7 @@ class AtMostTest {
         @Test
         void shouldThrowWithNegativeCondition() {
             FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-                .matcherName("AtMostFailureRetries")
+                .matcherName("AtMost")
                 .condition("-1")
                 .build();
 
@@ -243,7 +252,7 @@ class AtMostTest {
         @Test
         void shouldThrowWithConditionToZero() {
             FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-                .matcherName("AtMostFailureRetries")
+                .matcherName("AtMost")
                 .condition("0")
                 .build();
 
