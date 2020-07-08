@@ -98,7 +98,7 @@ public class RemoteDeliveryErrorHandlingTest {
                     .addMailet(BCC_STRIPPER)
                     .addMailet(MailetConfiguration.builder()
                         .mailet(RemoteDelivery.class)
-                        .addProperty("maxRetries", "1")
+                        .addProperty("maxRetries", "2")
                         .addProperty("delayTime", "0")
                         .addProperty("bounceProcessor", "remote-delivery-error")
                         .matcher(AtMost.class)
@@ -107,6 +107,7 @@ public class RemoteDeliveryErrorHandlingTest {
                         .matcher(All.class)
                         .mailet(ToRepository.class)
                         .addProperty("repositoryPath", REMOTE_DELIVERY_PERMANENT_ERROR_REPOSITORY.asString())))
+
                 .putProcessor(ProcessorConfiguration.builder()
                     .state("remote-delivery-error")
                     .addMailet(MailetConfiguration.builder()
