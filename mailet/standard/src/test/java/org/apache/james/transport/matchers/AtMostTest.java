@@ -30,12 +30,14 @@ import javax.mail.MessagingException;
 
 import org.apache.james.core.MailAddress;
 import org.apache.mailet.Attribute;
+import org.apache.mailet.AttributeName;
 import org.apache.mailet.AttributeValue;
 import org.apache.mailet.Mail;
 import org.apache.mailet.base.test.FakeMail;
 import org.apache.mailet.base.test.FakeMatcherConfig;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.github.fge.lambdas.Throwing;
@@ -59,100 +61,214 @@ class AtMostTest {
             .matcherName("AtMost")
             .condition(CONDITION)
             .build();
-
         matcher.init(matcherConfig);
     }
 
-    @Test
-    void shouldMatchWhenAttributeNotSet() throws MessagingException {
-        Mail mail = createMail();
+    @Nested
+    class WrongConditionConfigurationTest {
+        private static final String NO_VALUE_MATCHER = "NoValueMatcher";
+        private static final String RETRY_WITHOUT_CONDITION_NAME = ":3";
+        private static final String RETRY_WITHOUT_CONDITION_VALUE = "randomName:";
+        private static final String RETRY_WITH_SPACE_IN_CONDITION = "  :  ";
 
-        Collection<MailAddress> actual = matcher.match(mail);
+        @Test
+        void shouldThrowWhenMatchersConfigWithOutConditionValue() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition(RETRY_WITHOUT_CONDITION_VALUE)
+                .build()))
+                .isInstanceOf(MessagingException.class);
+        }
 
-        assertThat(actual).containsOnly(RECIPIENT1);
+        @Test
+        void shouldThrowWhenMatchersConfigWithConditionValueAsWord() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition("value")
+                .build()))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldThrowWhenMatchersConfigWithNegativeConditionValue() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition("-87")
+                .build()))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldThrowWhenMatchersConfigWithoutConditionValue() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition(RETRY_WITHOUT_CONDITION_VALUE)
+                .build()))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldThrowWhenMatchersConfigWithoutConditionName() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition(RETRY_WITHOUT_CONDITION_NAME)
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void shouldThrowWhenMatchersConfigNameAsSpace() {
+            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
+                .matcherName(NO_VALUE_MATCHER)
+                .condition(RETRY_WITH_SPACE_IN_CONDITION)
+                .build()))
+                .isInstanceOf(MessagingException.class);
+        }
     }
 
-    @Test
-    void shouldMatchWhenNoRetries() throws MessagingException {
-        Mail mail = createMail();
-        mail.setAttribute(new Attribute(AT_MOST_EXECUTIONS, AttributeValue.of(0)));
+    @Nested
+    class MultiplesMatcherConfigurationTest {
+        private static final String MULTIPLE_MATCHERS = "MultipleMatchers";
+        private static final String RETRY_3_TIMES = "randomName:3";
+        private static final String RETRY_5_TIMES = "randomName:5";
 
-        Collection<MailAddress> actual = matcher.match(mail);
+        private AtMost multipleMatchers;
 
-        assertThat(actual).containsOnly(RECIPIENT1);
+        @BeforeEach
+        void setup() throws MessagingException {
+            this.multipleMatchers = new AtMost();
+            multipleMatchers.init(
+                FakeMatcherConfig.builder()
+                    .matcherName("MultipleMatchers")
+                    .condition(RETRY_3_TIMES)
+                    .condition(RETRY_5_TIMES)
+                    .build());
+        }
+
+        @Test
+        void matchersShouldMatchWhenNoRetries() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AttributeName.of(MULTIPLE_MATCHERS), AttributeValue.of(0)));
+
+            Collection<MailAddress> actual = multipleMatchers.match(mail);
+
+            assertThat(actual).containsOnly(RECIPIENT1);
+        }
+
+        @Test
+        void matchersShouldStopWhenAMatcherReachedLimit() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AttributeName.of(MULTIPLE_MATCHERS), AttributeValue.of(3)));
+
+            Collection<MailAddress> actual = multipleMatchers.match(mail);
+
+            assertThat(actual).containsOnly(RECIPIENT1);
+        }
+
+        @Test
+        void matchersShouldMatchWhenLimitNotReached() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AttributeName.of("randomName"), AttributeValue.of(2)));
+
+            Collection<MailAddress> actual = multipleMatchers.match(mail);
+
+            assertThat(actual).containsOnly(RECIPIENT1);
+        }
     }
 
-    @Test
-    void shouldNotMatchWhenOverAtMost() throws MessagingException {
-        Mail mail = createMail();
-        mail.setAttribute(new Attribute(AT_MOST_EXECUTIONS, AttributeValue.of(3)));
+    @Nested
+    class SingleMatcherConfigurationTest {
+        @Test
+        void shouldMatchWhenAttributeNotSet() throws MessagingException {
+            Mail mail = createMail();
 
-        Collection<MailAddress> actual = matcher.match(mail);
+            Collection<MailAddress> actual = matcher.match(mail);
 
-        assertThat(actual).isEmpty();
-    }
+            assertThat(actual).containsOnly(RECIPIENT1);
+        }
 
-    @Test
-    void shouldNotMatchWhenEqualToAtMost() throws MessagingException {
-        Mail mail = createMail();
-        mail.setAttribute(new Attribute(AT_MOST_EXECUTIONS, AttributeValue.of(2)));
+        @Test
+        void shouldMatchWhenNoRetries() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AT_MOST_TRIES, AttributeValue.of(0)));
 
-        Collection<MailAddress> actual = matcher.match(mail);
+            Collection<MailAddress> actual = matcher.match(mail);
 
-        assertThat(actual).isEmpty();
-    }
+            assertThat(actual).containsOnly(RECIPIENT1);
+        }
 
-    @Test
-    void shouldThrowWithEmptyCondition() {
-        FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-            .matcherName("AtMost")
-            .build();
+        @Test
+        void shouldNotMatchWhenOverAtMost() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AT_MOST_TRIES, AttributeValue.of(3)));
 
-        assertThatThrownBy(() -> matcher.init(matcherConfig))
-            .isInstanceOf(MessagingException.class);
-    }
+            Collection<MailAddress> actual = matcher.match(mail);
 
-    @Test
-    void shouldThrowWithInvalidCondition() {
-        FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-            .matcherName("AtMost")
-            .condition("invalid")
-            .build();
+            assertThat(actual).isEmpty();
+        }
 
-        assertThatThrownBy(() -> matcher.init(matcherConfig))
-            .isInstanceOf(MessagingException.class);
-    }
+        @Test
+        void shouldNotMatchWhenEqualToAtMost() throws MessagingException {
+            Mail mail = createMail();
+            mail.setAttribute(new Attribute(AT_MOST_TRIES, AttributeValue.of(2)));
 
-    @Test
-    void shouldThrowWithNegativeCondition() {
-        FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-            .matcherName("AtMost")
-            .condition("-1")
-            .build();
+            Collection<MailAddress> actual = matcher.match(mail);
 
-        assertThatThrownBy(() -> matcher.init(matcherConfig))
-            .isInstanceOf(MessagingException.class);
-    }
+            assertThat(actual).isEmpty();
+        }
 
-    @Test
-    void shouldThrowWithConditionToZero() {
-        FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-            .matcherName("AtMost")
-            .condition("0")
-            .build();
+        @Test
+        void shouldThrowWithEmptyCondition() {
+            FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
+                .matcherName("AtMostFailureRetries")
+                .build();
 
-        assertThatThrownBy(() -> matcher.init(matcherConfig))
-            .isInstanceOf(MessagingException.class);
-    }
+            assertThatThrownBy(() -> matcher.init(matcherConfig))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
 
-    @Test
-    void shouldMatchUntilOverAtMost() throws MessagingException {
-        Mail mail = createMail();
+        @Test
+        void shouldThrowWithInvalidCondition() {
+            FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
+                .matcherName("AtMostFailureRetries")
+                .condition("invalid")
+                .build();
 
-        SoftAssertions.assertSoftly(Throwing.consumer(softly -> {
-            softly.assertThat(matcher.match(mail)).describedAs("First execution").contains(RECIPIENT1);
-            softly.assertThat(matcher.match(mail)).describedAs("Second execution").contains(RECIPIENT1);
-            softly.assertThat(matcher.match(mail)).describedAs("Third execution").isEmpty();
-        }));
+            assertThatThrownBy(() -> matcher.init(matcherConfig))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldThrowWithNegativeCondition() {
+            FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
+                .matcherName("AtMostFailureRetries")
+                .condition("-1")
+                .build();
+
+            assertThatThrownBy(() -> matcher.init(matcherConfig))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldThrowWithConditionToZero() {
+            FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
+                .matcherName("AtMostFailureRetries")
+                .condition("0")
+                .build();
+
+            assertThatThrownBy(() -> matcher.init(matcherConfig))
+                .isInstanceOf(MessagingException.class);
+        }
+
+        @Test
+        void shouldMatchUntilOverAtMost() throws MessagingException {
+            Mail mail = createMail();
+
+            SoftAssertions.assertSoftly(Throwing.consumer(softly -> {
+                softly.assertThat(matcher.match(mail)).describedAs("First execution").contains(RECIPIENT1);
+                softly.assertThat(matcher.match(mail)).describedAs("Second execution").contains(RECIPIENT1);
+                softly.assertThat(matcher.match(mail)).describedAs("Third execution").isEmpty();
+            }));
+        }
     }
 }
