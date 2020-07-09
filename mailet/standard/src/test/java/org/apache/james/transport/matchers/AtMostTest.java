@@ -159,13 +159,18 @@ class AtMostTest {
         }
 
         @Test
-        void matchersShouldMatchWhenLimitNotReached() throws MessagingException {
-            Mail mail = createMail();
-            mail.setAttribute(new Attribute(AttributeName.of("AtMost3"), AttributeValue.of(2)));
+        void matchersShouldStopWhenAMatcherReachedLimit() throws MessagingException {
+            Mail mail1 = createMail();
 
-            Collection<MailAddress> actual = atMost2.match(mail);
-
-            assertThat(actual).containsOnly(RECIPIENT1);
+            SoftAssertions.assertSoftly(Throwing.consumer(
+                softly -> {
+                    softly.assertThat(atMost2.match(mail1)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost2.match(mail1)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost2.match(mail1)).isEmpty();
+                    softly.assertThat(atMost3.match(mail1)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost3.match(mail1)).containsOnly(RECIPIENT1);
+                    softly.assertThat(atMost3.match(mail1)).isEmpty();
+                }));
         }
     }
 
