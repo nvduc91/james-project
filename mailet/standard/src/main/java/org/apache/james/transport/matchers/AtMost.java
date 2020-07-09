@@ -40,51 +40,33 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
 /**
-<<<<<<< 2ac2f1c25f5911ee496ecf17224c763445337601
  * Checks that a mail did at most X executions on a specific operation.
  *
- * If no executions have been performed previously, it sets up an attribute `AT_MOST_EXECUTIONS`
- * in the mail that will be incremented every time the check succeeds.
-=======
- * <p>Checks that a mail did at most X retries on a specific operation</p>
- *
- * <p> If no retries have been performed previously for Y attribute, it'll be sets up.</p>
- * <p> In the mail, every time the check was succeeds, counter of it will be increment by one.
+ * <p> If no executions have been performed previously for Y attribute, it will be sets up.</p>
+ * <p> In the mail, every time the check was succeeds, its counter will be incremented by one.
  * The check fails when the defined X limit is reached.</p>
->>>>>>> j3295: handle configuration AtMostMatcher with differents config
  *
  * <ul>
- * <li>X - count of how many times a specific operation retried</li>
- * <li>Y - name of attribute represented for specific operation retried, default value is: <i>AT_MOST_TRIES</i></li>
+ * <li>X - count of how many times a specific operation is performed</li>
+ * <li>Y - name of attribute represented for specific operation executions, default value is: <i>AT_MOST_EXECUTIONS</i></li>
  * </ul>
  *
-<<<<<<< 2ac2f1c25f5911ee496ecf17224c763445337601
  * <p>The example below will match a mail with at most 3 executions on the mailet</p>
-=======
- * <p>The example below will match mail with at most 3 tries on the mailet
- * with attribute name <i>AT_MOST_TRIES</i></p>
->>>>>>> j3295: handle configuration AtMostMatcher with differents config
+ * with attribute name <i>AT_MOST_EXECUTIONS</i></p>
  *
  * <pre><code>
- * &lt;mailet match=&quot;AtMost=AT_MOST_TRIES:3&quot; class=&quot;&lt;any-class&gt;&quot;&gt;
+ * &lt;mailet match=&quot;AtMost=AT_MOST_EXECUTIONS:3&quot; class=&quot;&lt;any-class&gt;&quot;&gt;
  * &lt;/mailet&gt;
  * </code></pre>
  */
 public class AtMost extends GenericMatcher {
-<<<<<<< 2ac2f1c25f5911ee496ecf17224c763445337601
     static final AttributeName AT_MOST_EXECUTIONS = AttributeName.of("AT_MOST_EXECUTIONS");
-    private Integer atMostExecutions;
-
-    @Override
-    public void init() throws MessagingException {
-        this.atMostExecutions = MailetUtil.getInitParameterAsStrictlyPositiveInteger(getCondition());
-=======
-    static final AttributeName AT_MOST_TRIES = AttributeName.of("AT_MOST_TRIES");
     private static final String CONDITION_SEPARATOR = ":";
     private static final int ONLY_CONDITION_VALUE = 1;
     private static final int CONDITION_NAME_AND_VALUE = 2;
 
-    private Attribute condition;
+    private AttributeName attributeName;
+    private Integer atMostExecutions;
 
     @Override
     public void init() throws MessagingException {
@@ -94,40 +76,39 @@ public class AtMost extends GenericMatcher {
             "MatcherConfiguration can not start with '%s'", CONDITION_SEPARATOR);
 
         List<String> conditions = Splitter.on(CONDITION_SEPARATOR).splitToList(conditionConfig);
-        condition = parseAttribute(conditions);
+        attributeName = parseAttribute(conditions);
+        atMostExecutions = parseAttributeValue(conditions);
     }
 
-    private Attribute parseAttribute(List<String> conditions) throws MessagingException {
+    private AttributeName parseAttribute(List<String> conditions){
         switch (conditions.size()) {
             case ONLY_CONDITION_VALUE:
-                return new Attribute(AT_MOST_TRIES,
-                    AttributeValue.of(MailetUtil.getInitParameterAsStrictlyPositiveInteger(conditions.get(0))));
-
+                return AT_MOST_EXECUTIONS;
             case CONDITION_NAME_AND_VALUE:
-                return new Attribute(AttributeName.of(conditions.get(0)),
-                    AttributeValue.of(MailetUtil.getInitParameterAsStrictlyPositiveInteger(conditions.get(1))));
-
+                return AttributeName.of(conditions.get(0));
             default:
-                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'value:name'");
+                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value'");
         }
->>>>>>> j3295: handle configuration AtMostMatcher with differents config
+    }
+
+    private Integer parseAttributeValue(List<String> conditions) throws MessagingException {
+        switch (conditions.size()) {
+            case ONLY_CONDITION_VALUE:
+                return MailetUtil.getInitParameterAsStrictlyPositiveInteger(conditions.get(0));
+            case CONDITION_NAME_AND_VALUE:
+                return MailetUtil.getInitParameterAsStrictlyPositiveInteger(conditions.get(1));
+            default:
+                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value'");
+        }
     }
 
     @Override
     public Collection<MailAddress> match(Mail mail) throws MessagingException {
-<<<<<<< 2ac2f1c25f5911ee496ecf17224c763445337601
-        return AttributeUtils.getValueAndCastFromMail(mail, AT_MOST_EXECUTIONS, Integer.class)
+        return AttributeUtils.getValueAndCastFromMail(mail, attributeName, Integer.class)
             .or(() -> Optional.of(0))
             .filter(executions -> executions < atMostExecutions)
             .map(executions -> {
-                mail.setAttribute(new Attribute(AT_MOST_EXECUTIONS, AttributeValue.of(executions + 1)));
-=======
-        return AttributeUtils.getValueAndCastFromMail(mail, condition.getName(), Integer.class)
-            .or(() -> Optional.of(0))
-            .filter(retries -> retries < condition.getValue().valueAs(Integer.class).get())
-            .map(retries -> {
-                mail.setAttribute(new Attribute(condition.getName(), AttributeValue.of(retries + 1)));
->>>>>>> j3295: handle configuration AtMostMatcher with differents config
+                mail.setAttribute(new Attribute(attributeName, AttributeValue.of(executions + 1)));
                 return mail.getRecipients();
             })
             .orElse(ImmutableList.of());
