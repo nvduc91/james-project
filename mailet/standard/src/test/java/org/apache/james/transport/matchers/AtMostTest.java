@@ -85,15 +85,6 @@ class AtMostTest {
         }
 
         @Test
-        void shouldThrowWhenMatchersConfigWithNegativeConditionValue() {
-            assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
-                    .matcherName("NoValueMatcher")
-                    .condition("-87")
-                    .build()))
-                .isInstanceOf(MessagingException.class);
-        }
-
-        @Test
         void shouldThrowWhenMatchersConfigWithoutConditionName() {
             assertThatThrownBy(() -> new AtMost().init(FakeMatcherConfig.builder()
                     .matcherName("NoValueMatcher")
@@ -120,17 +111,6 @@ class AtMostTest {
 
             assertThatThrownBy(() -> matcher.init(matcherConfig))
                 .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void shouldThrowWithInvalidCondition() {
-            FakeMatcherConfig matcherConfig = FakeMatcherConfig.builder()
-                .matcherName("AtMost")
-                .condition("invalid")
-                .build();
-
-            assertThatThrownBy(() -> matcher.init(matcherConfig))
-                .isInstanceOf(MessagingException.class);
         }
 
         @Test
@@ -176,21 +156,6 @@ class AtMostTest {
                     .matcherName("AtMost")
                     .condition("AtMost3:2")
                     .build());
-        }
-
-        @Test
-        void matchersShouldStopWhenAMatcherReachedLimit() throws MessagingException {
-            Mail mail1 = createMail();
-
-            SoftAssertions.assertSoftly(Throwing.consumer(
-                softly -> {
-                    softly.assertThat(atMost2.match(mail1)).containsOnly(RECIPIENT1);
-                    softly.assertThat(atMost2.match(mail1)).containsOnly(RECIPIENT1);
-                    softly.assertThat(atMost2.match(mail1)).isEmpty();
-                    softly.assertThat(atMost3.match(mail1)).containsOnly(RECIPIENT1);
-                    softly.assertThat(atMost3.match(mail1)).containsOnly(RECIPIENT1);
-                    softly.assertThat(atMost3.match(mail1)).isEmpty();
-                }));
         }
 
         @Test
