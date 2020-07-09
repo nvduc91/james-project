@@ -42,8 +42,8 @@ import com.google.common.collect.ImmutableList;
 /**
  * Checks that a mail did at most X executions on a specific operation.
  *
- * <p> If no executions have been performed previously for Y attribute, it will be sets up.</p>
- * <p> In the mail, every time the check was succeeds, its counter will be incremented by one.
+ * <p> If no executions have been performed previously for Y attribute, it will be set up.</p>
+ * <p> In the mail, every time the check succeeds, its counter will be incremented by one.
  * The check fails when the defined X limit is reached.</p>
  *
  * <ul>
