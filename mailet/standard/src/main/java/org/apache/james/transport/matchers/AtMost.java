@@ -80,7 +80,7 @@ public class AtMost extends GenericMatcher {
         atMostExecutions = parseAttributeValue(conditions);
     }
 
-    private AttributeName parseAttribute(List<String> conditions){
+    private AttributeName parseAttribute(List<String> conditions) {
         switch (conditions.size()) {
             case ONLY_CONDITION_VALUE:
                 return AT_MOST_EXECUTIONS;
