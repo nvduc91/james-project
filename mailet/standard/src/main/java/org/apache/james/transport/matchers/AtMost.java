@@ -87,7 +87,7 @@ public class AtMost extends GenericMatcher {
             case CONDITION_NAME_AND_VALUE:
                 return AttributeName.of(conditions.get(0));
             default:
-                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value'");
+                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value' or 'value'");
         }
     }
 
@@ -98,7 +98,7 @@ public class AtMost extends GenericMatcher {
             case CONDITION_NAME_AND_VALUE:
                 return MailetUtil.getInitParameterAsStrictlyPositiveInteger(conditions.get(1));
             default:
-                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value'");
+                throw new IllegalArgumentException("MatcherConfiguration format should follow: 'name:value' or 'value'");
         }
     }
 
