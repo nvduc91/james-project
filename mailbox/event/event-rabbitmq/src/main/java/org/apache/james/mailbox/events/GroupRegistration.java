@@ -23,8 +23,10 @@ import static org.apache.james.backends.rabbitmq.Constants.AUTO_DELETE;
 import static org.apache.james.backends.rabbitmq.Constants.DURABLE;
 import static org.apache.james.backends.rabbitmq.Constants.EMPTY_ROUTING_KEY;
 import static org.apache.james.backends.rabbitmq.Constants.EXCLUSIVE;
-import static org.apache.james.backends.rabbitmq.Constants.NO_ARGUMENTS;
+import static org.apache.james.backends.rabbitmq.Constants.REQUEUE;
+import static org.apache.james.backends.rabbitmq.Constants.deadLetterQueue;
 import static org.apache.james.mailbox.events.RabbitMQEventBus.MAILBOX_EVENT;
+import static org.apache.james.mailbox.events.RabbitMQEventBus.MAILBOX_EVENT_DEAD_LETTER_EXCHANGE_NAME;
 import static org.apache.james.mailbox.events.RabbitMQEventBus.MAILBOX_EVENT_EXCHANGE_NAME;
 
 import java.nio.charset.StandardCharsets;
@@ -35,6 +37,8 @@ import java.util.function.Predicate;
 import org.apache.james.backends.rabbitmq.ReceiverProvider;
 import org.apache.james.event.json.EventSerializer;
 import org.apache.james.util.MDCBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
@@ -70,6 +74,7 @@ class GroupRegistration implements Registration {
         }
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroupRegistration.class);
     static final String RETRY_COUNT = "retry-count";
     static final int DEFAULT_RETRY_COUNT = 0;
 
@@ -120,7 +125,7 @@ class GroupRegistration implements Registration {
                 .durable(DURABLE)
                 .exclusive(!EXCLUSIVE)
                 .autoDelete(!AUTO_DELETE)
-                .arguments(NO_ARGUMENTS)),
+                .arguments(deadLetterQueue(MAILBOX_EVENT_DEAD_LETTER_EXCHANGE_NAME))),
             sender.bind(BindingSpecification.binding()
                 .exchange(MAILBOX_EVENT_EXCHANGE_NAME)
                 .queue(queueName.asString())
@@ -138,13 +143,22 @@ class GroupRegistration implements Registration {
 
     private Mono<Void> deliver(AcknowledgableDelivery acknowledgableDelivery) {
         byte[] eventAsBytes = acknowledgableDelivery.getBody();
-        Event event = eventSerializer.fromJson(new String(eventAsBytes, StandardCharsets.UTF_8)).get();
         int currentRetryCount = getRetryCount(acknowledgableDelivery);
 
-        return delayGenerator.delayIfHaveTo(currentRetryCount)
-            .flatMap(any -> runListener(event))
-            .onErrorResume(throwable -> retryHandler.handleRetry(event, currentRetryCount, throwable))
-            .then(Mono.fromRunnable(acknowledgableDelivery::ack));
+        return deserializeEvent(eventAsBytes)
+            .flatMap(event -> delayGenerator.delayIfHaveTo(currentRetryCount)
+                .flatMap(any -> runListener(event))
+                .onErrorResume(throwable -> retryHandler.handleRetry(event, currentRetryCount, throwable))
+                .then(Mono.<Void>fromRunnable(acknowledgableDelivery::ack)))
+            .onErrorResume(e -> {
+                LOGGER.error("Unable to process delivery for group {}", group, e);
+                return Mono.fromRunnable(() -> acknowledgableDelivery.nack(!REQUEUE));
+            });
+    }
+
+    private Mono<Event> deserializeEvent(byte[] eventAsBytes) {
+        return Mono.fromCallable(() -> eventSerializer.fromJson(new String(eventAsBytes, StandardCharsets.UTF_8)).get())
+            .subscribeOn(Schedulers.parallel());
     }
 
     Mono<Void> reDeliver(Event event) {
