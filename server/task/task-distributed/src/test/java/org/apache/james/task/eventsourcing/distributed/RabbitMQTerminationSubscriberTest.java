@@ -91,7 +91,8 @@ class RabbitMQTerminationSubscriberTest implements TerminationSubscriberContract
 
     @Test
     void eventProcessingShouldNotCrashOnInvalidMessage() {
-        Flux<Event> firstListener = Flux.from(subscriber().listenEvents());
+        TerminationSubscriber subscriber1 = subscriber();
+        Flux<Event> firstListener = Flux.from(subscriber1.listenEvents());
 
         rabbitMQExtension.getSender()
             .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
@@ -99,18 +100,18 @@ class RabbitMQTerminationSubscriberTest implements TerminationSubscriberContract
                 "BAD_PAYLOAD!".getBytes(UTF_8))))
             .block();
 
+        sendEvents(subscriber1, COMPLETED_EVENT);
+
         List<Event> receivedEventsFirst = new ArrayList<>();
         firstListener.subscribe(receivedEventsFirst::add);
 
-        await().timeout(TEN_SECONDS).untilAsserted(() -> assertThat(receivedEventsFirst).isEmpty());
+        await().timeout(TEN_SECONDS).untilAsserted(() -> assertThat(receivedEventsFirst).hasSize(1));
     }
 
     @Test
     void eventProcessingShouldNotCrashOnInvalidMessages() {
         TerminationSubscriber subscriber1 = subscriber();
-        TerminationSubscriber subscriber2 = subscriber();
         Flux<Event> firstListener = Flux.from(subscriber1.listenEvents());
-        Flux<Event> secondListener = Flux.from(subscriber2.listenEvents());
 
         IntStream.range(0, 10).forEach(i -> rabbitMQExtension.getSender()
             .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
@@ -122,13 +123,10 @@ class RabbitMQTerminationSubscriberTest implements TerminationSubscriberContract
 
         List<Event> receivedEventsFirst = new ArrayList<>();
         firstListener.subscribe(receivedEventsFirst::add);
-        List<Event> receivedEventsSecond = new ArrayList<>();
-        secondListener.subscribe(receivedEventsSecond::add);
 
         await().atMost(ONE_MINUTE).untilAsserted(() ->
             SoftAssertions.assertSoftly(soft -> {
                 assertThat(receivedEventsFirst).containsExactly(COMPLETED_EVENT);
-                assertThat(receivedEventsSecond).containsExactly(COMPLETED_EVENT);
             }));
     }
 }
