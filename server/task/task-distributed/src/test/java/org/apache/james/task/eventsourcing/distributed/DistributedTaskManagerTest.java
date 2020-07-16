@@ -19,11 +19,17 @@
 
 package org.apache.james.task.eventsourcing.distributed;
 
+<<<<<<< 0967b650ff29dee438ae9d020286c9c27437e428
 import static com.rabbitmq.client.MessageProperties.PERSISTENT_TEXT_PLAIN;
 import static org.apache.james.backends.cassandra.Scenario.Builder.executeNormally;
 import static org.apache.james.backends.cassandra.Scenario.Builder.fail;
 import static org.apache.james.task.eventsourcing.distributed.RabbitMQWorkQueue.EXCHANGE_NAME;
 import static org.apache.james.task.eventsourcing.distributed.RabbitMQWorkQueue.ROUTING_KEY;
+=======
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.james.task.eventsourcing.distributed.RabbitMQTerminationSubscriber.EXCHANGE_NAME;
+import static org.apache.james.task.eventsourcing.distributed.RabbitMQTerminationSubscriber.ROUTING_KEY;
+>>>>>>> JAMES-3008: add test for DistributedTaskManagerTest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Duration.FIVE_SECONDS;
@@ -215,6 +221,86 @@ class DistributedTaskManagerTest implements TaskManagerContract {
         terminationSubscribers.add(terminationSubscriber);
         terminationSubscriber.start();
         return new EventSourcingTaskManager(workQueueSupplier, eventStore, executionDetailsProjection, hostname, terminationSubscriber);
+    }
+
+    @Test
+    void badPayLoadShouldNotAffectToTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
+        TaskManager taskManager = taskManager(HOSTNAME);
+        TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
+            Thread.sleep(250);
+            return Task.Result.COMPLETED;
+        }));
+
+        rabbitMQExtension.getSender()
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
+                ROUTING_KEY,
+                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .block();
+
+        taskManager.cancel(id);
+        taskManager.await(id, TIMEOUT);
+        assertThat(taskManager.getExecutionDetails(id).getStatus())
+            .isEqualTo(TaskManager.Status.CANCELLED);
+    }
+
+    @Test
+    void badPayLoadsShouldNotAffectToTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
+        TaskManager taskManager = taskManager(HOSTNAME);
+        TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
+            Thread.sleep(250);
+            return Task.Result.COMPLETED;
+        }));
+
+        IntStream.range(0, 100)
+            .forEach(i -> rabbitMQExtension.getSender()
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
+                ROUTING_KEY,
+                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .block());
+
+        taskManager.cancel(id);
+        taskManager.await(id, TIMEOUT);
+        assertThat(taskManager.getExecutionDetails(id).getStatus())
+            .isEqualTo(TaskManager.Status.CANCELLED);
+    }
+
+    @Test
+    void badPayLoadShouldNotAffectToTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
+        TaskManager taskManager = taskManager(HOSTNAME);
+        TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
+            Thread.sleep(250);
+            return Task.Result.COMPLETED;
+        }));
+
+        rabbitMQExtension.getSender()
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
+                ROUTING_KEY,
+                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .block();
+
+        taskManager.await(id, TIMEOUT);
+        assertThat(taskManager.getExecutionDetails(id).getStatus())
+            .isEqualTo(TaskManager.Status.COMPLETED);
+    }
+
+    @Test
+    void badPayLoadsShouldNotAffectToTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
+        TaskManager taskManager = taskManager(HOSTNAME);
+        TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
+            Thread.sleep(250);
+            return Task.Result.COMPLETED;
+        }));
+
+        IntStream.range(0, 100)
+            .forEach(i -> rabbitMQExtension.getSender()
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
+                ROUTING_KEY,
+                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .block());
+
+        taskManager.await(id, TIMEOUT);
+        assertThat(taskManager.getExecutionDetails(id).getStatus())
+            .isEqualTo(TaskManager.Status.COMPLETED);
     }
 
     @Test
