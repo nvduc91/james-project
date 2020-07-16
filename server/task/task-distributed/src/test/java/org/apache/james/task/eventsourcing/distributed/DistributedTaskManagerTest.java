@@ -108,6 +108,8 @@ import reactor.rabbitmq.Sender;
 
 class DistributedTaskManagerTest implements TaskManagerContract {
 
+    private static final byte[] BAD_PAYLOAD = "BAD_PAYLOAD!".getBytes(UTF_8);
+
     static class TrackedRabbitMQWorkQueueSupplier implements WorkQueueSupplier {
         private final List<RabbitMQWorkQueue> workQueues;
         private final RabbitMQWorkQueueSupplier supplier;
@@ -224,7 +226,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
     }
 
     @Test
-    void badPayLoadShouldNotAffectToTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
+    void badPayloadShouldNotAffectTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
         TaskManager taskManager = taskManager(HOSTNAME);
         TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
             Thread.sleep(250);
@@ -232,9 +234,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
         }));
 
         rabbitMQExtension.getSender()
-            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
-                ROUTING_KEY,
-                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME, ROUTING_KEY, BAD_PAYLOAD)))
             .block();
 
         taskManager.cancel(id);
@@ -244,7 +244,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
     }
 
     @Test
-    void badPayLoadsShouldNotAffectToTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
+    void badPayloadsShouldNotAffectTaskManagerOnCancelTask() throws TaskManager.ReachedTimeoutException {
         TaskManager taskManager = taskManager(HOSTNAME);
         TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
             Thread.sleep(250);
@@ -253,9 +253,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
 
         IntStream.range(0, 100)
             .forEach(i -> rabbitMQExtension.getSender()
-            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
-                ROUTING_KEY,
-                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME, ROUTING_KEY, BAD_PAYLOAD)))
             .block());
 
         taskManager.cancel(id);
@@ -265,7 +263,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
     }
 
     @Test
-    void badPayLoadShouldNotAffectToTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
+    void badPayloadShouldNotAffectTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
         TaskManager taskManager = taskManager(HOSTNAME);
         TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
             Thread.sleep(250);
@@ -273,9 +271,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
         }));
 
         rabbitMQExtension.getSender()
-            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
-                ROUTING_KEY,
-                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME, ROUTING_KEY, BAD_PAYLOAD)))
             .block();
 
         taskManager.await(id, TIMEOUT);
@@ -284,7 +280,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
     }
 
     @Test
-    void badPayLoadsShouldNotAffectToTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
+    void badPayloadsShouldNotAffectTaskManagerOnCompleteTask() throws TaskManager.ReachedTimeoutException {
         TaskManager taskManager = taskManager(HOSTNAME);
         TaskId id = taskManager.submit(new MemoryReferenceTask(() -> {
             Thread.sleep(250);
@@ -293,9 +289,7 @@ class DistributedTaskManagerTest implements TaskManagerContract {
 
         IntStream.range(0, 100)
             .forEach(i -> rabbitMQExtension.getSender()
-            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME,
-                ROUTING_KEY,
-                "BAD_PAYLOAD!".getBytes(UTF_8))))
+            .send(Mono.just(new OutboundMessage(EXCHANGE_NAME, ROUTING_KEY, BAD_PAYLOAD)))
             .block());
 
         taskManager.await(id, TIMEOUT);
