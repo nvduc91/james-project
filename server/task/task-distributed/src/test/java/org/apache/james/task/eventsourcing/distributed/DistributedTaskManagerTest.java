@@ -19,17 +19,12 @@
 
 package org.apache.james.task.eventsourcing.distributed;
 
-<<<<<<< 0967b650ff29dee438ae9d020286c9c27437e428
 import static com.rabbitmq.client.MessageProperties.PERSISTENT_TEXT_PLAIN;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.james.backends.cassandra.Scenario.Builder.executeNormally;
 import static org.apache.james.backends.cassandra.Scenario.Builder.fail;
 import static org.apache.james.task.eventsourcing.distributed.RabbitMQWorkQueue.EXCHANGE_NAME;
 import static org.apache.james.task.eventsourcing.distributed.RabbitMQWorkQueue.ROUTING_KEY;
-=======
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.james.task.eventsourcing.distributed.RabbitMQTerminationSubscriber.EXCHANGE_NAME;
-import static org.apache.james.task.eventsourcing.distributed.RabbitMQTerminationSubscriber.ROUTING_KEY;
->>>>>>> JAMES-3008: add test for DistributedTaskManagerTest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Duration.FIVE_SECONDS;
