@@ -34,7 +34,7 @@ import org.apache.james.mailbox.model.{MailboxACL, MailboxId}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-import scala.collection.{immutable, Seq => LegacySeq}
+import scala.collection.{Seq => LegacySeq}
 import scala.util.Try
 
 class Serializer @Inject() (mailboxIdFactory: MailboxId.Factory) {
@@ -249,15 +249,8 @@ class Serializer @Inject() (mailboxIdFactory: MailboxId.Factory) {
       })
     }
 
-  private def mailboxWritesWithFilteredProperties(properties: Option[Properties], capabilities: immutable.Set[CapabilityIdentifier]): Writes[Mailbox] = {
-    val propertiesForCapabitilites: immutable.Map[CapabilityIdentifier, immutable.Set[String]] = Map(
-      CapabilityIdentifier.JAMES_QUOTA -> Set("quotas"),
-      CapabilityIdentifier.JAMES_SHARES -> Set("namespace", "rights")
-    )
-    val propertiesToHide = propertiesForCapabitilites.filterNot(entry => capabilities.contains(entry._1))
-      .flatMap(_._2)
-      .toSet
-    mailboxWrites(propertiesToHide)
+  private def mailboxWritesWithFilteredProperties(properties: Option[Properties], capabilities: Set[CapabilityIdentifier]): Writes[Mailbox] = {
+    mailboxWrites(Mailbox.propertiesFiltered(properties, capabilities))
   }
 
   private implicit def jsErrorWrites: Writes[JsError] = Json.writes[JsError]
