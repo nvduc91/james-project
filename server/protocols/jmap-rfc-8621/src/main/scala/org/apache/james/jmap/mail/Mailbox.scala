@@ -156,7 +156,8 @@ object Mailbox {
       CapabilityIdentifier.JAMES_SHARES -> Set("namespace", "rights")
     )
 
-    val propertiesToHide = propertiesForCapabilities.filterNot(entry => allowedCapabilities.contains(entry._1))
+    val propertiesToHide = propertiesForCapabilities
+      .filterNot(entry => allowedCapabilities.contains(entry._1))
       .flatMap(_._2)
       .toSet
 

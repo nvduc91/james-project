@@ -94,7 +94,9 @@ object Fixture {
                          |          "maxSizeAttachmentsPerEmail" : 20000000,
                          |          "emailQuerySortOptions" : [ "receivedAt", "cc", "from", "to", "subject", "size", "sentAt", "hasKeyword", "uid", "Id" ],
                          |          "mayCreateTopLevelMailbox" : true
-                         |        }
+                         |        },
+                         |        "urn:apache:james:params:jmap:mail:quota": {},
+                         |        "urn:apache:james:params:jmap:mail:shares": {}
                          |      }
                          |    }
                          |  },
