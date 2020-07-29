@@ -87,7 +87,7 @@ public class RFC8621MethodsModule extends AbstractModule {
     JmapRfc8621Configuration provideConfiguration(PropertiesProvider propertiesProvider) throws ConfigurationException {
         try {
             Configuration configuration = propertiesProvider.getConfiguration("jmap");
-            return JmapRfc8621Configuration.from(configuration.getString("url.prefix"));
+            return JmapRfc8621Configuration.from(configuration);
         } catch (FileNotFoundException e) {
             LOGGER.warn("Could not find JMAP configuration file [jmap.properties]. JMAP server will be enabled with default value.");
             return LOCALHOST_CONFIGURATION();

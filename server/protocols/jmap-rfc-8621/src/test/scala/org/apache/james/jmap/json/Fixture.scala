@@ -23,9 +23,8 @@ import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.Id.Id
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodName}
-import org.apache.james.jmap.model.JmapRfc8621Configuration.LOCALHOST_URL_PREFIX
-import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, ResponseObject, ServerId}
 import play.api.libs.json.Json
+import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, JmapRfc8621Configuration, ResponseObject, ServerId}
 
 object Fixture {
   val id: Id = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
@@ -102,10 +101,10 @@ object Fixture {
                          |    "urn:ietf:params:jmap:mail" : "0fe275bf13ff761407c17f64b1dfae2f4b3186feea223d7267b79f873a105401"
                          |  },
                          |  "username" : "bob@james.org",
-                         |  "apiUrl" : "${LOCALHOST_URL_PREFIX}/jmap",
-                         |  "downloadUrl" : "${LOCALHOST_URL_PREFIX}/download",
-                         |  "uploadUrl" : "${LOCALHOST_URL_PREFIX}/upload",
-                         |  "eventSourceUrl" : "${LOCALHOST_URL_PREFIX}/eventSource",
+                         |  "apiUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/jmap",
+                         |  "downloadUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/download",
+                         |  "uploadUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/upload",
+                         |  "eventSourceUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/eventSource",
                          |  "state" : "000001"
                          |}""".stripMargin
 }

@@ -22,11 +22,14 @@ package org.apache.james.jmap.model
 import java.net.URL
 
 import eu.timepit.refined.api.Refined
+import org.apache.commons.configuration2.Configuration
 
 object JmapRfc8621Configuration {
-  def from(urlPrefixString: String): JmapRfc8621Configuration = JmapRfc8621Configuration(urlPrefixString)
   val LOCALHOST_URL_PREFIX: String = "http://localhost"
-  val LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
+  private def from(urlPrefixString: String): JmapRfc8621Configuration = JmapRfc8621Configuration(urlPrefixString)
+  var LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
+
+  def from(configuration: Configuration): JmapRfc8621Configuration = JmapRfc8621Configuration(configuration.getString("url.prefix"))
 }
 
 case class JmapRfc8621Configuration(urlPrefixString: String) {
