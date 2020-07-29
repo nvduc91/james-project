@@ -32,7 +32,7 @@ object JmapRfc8621Configuration {
 case class JmapRfc8621Configuration(urlPrefixString: String) {
   val urlPrefix: URL = new URL(urlPrefixString)
   val apiUrl: URL = new URL(s"${urlPrefixString}/api")
-  val downloadUrl = new URL(s"${urlPrefixString}/download")
-  val uploadUrl = new URL(s"${urlPrefixString}/upload")
-  val eventSourceUrl = new URL(s"${urlPrefixString}/eventSource")
+  val downloadUrl: URL = new URL(s"${urlPrefixString}/download")
+  val uploadUrl: URL = new URL(s"${urlPrefixString}/upload")
+  val eventSourceUrl: URL = new URL(s"${urlPrefixString}/eventSource")
 }
