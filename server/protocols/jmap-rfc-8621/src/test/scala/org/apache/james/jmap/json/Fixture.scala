@@ -19,11 +19,13 @@
 
 package org.apache.james.jmap.json
 
+import java.net.URL
+
 import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.Id.Id
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodName}
-import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, ResponseObject, ServerId}
+import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, JmapRfcConfiguration, ResponseObject, ServerId}
 import play.api.libs.json.{JsValue, Json}
 
 object Fixture {
@@ -47,4 +49,67 @@ object Fixture {
   val responseObject1: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1))
   val responseObject2: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation2))
   val responseObjectWithUnsupportedMethod: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1, unsupportedInvocation))
+
+  private val BASE_PATH = new URL("http://domain.com")
+  val JMAP_CONFIGURATION = JmapRfcConfiguration(BASE_PATH)
+
+  val expected_session_object: String = s"""{
+                         |  "capabilities" : {
+                         |    "urn:ietf:params:jmap:core" : {
+                         |      "maxSizeUpload" : 10000000,
+                         |      "maxConcurrentUpload" : 4,
+                         |      "maxSizeRequest" : 10000000,
+                         |      "maxConcurrentRequests" : 4,
+                         |      "maxCallsInRequest" : 16,
+                         |      "maxObjectsInGet" : 500,
+                         |      "maxObjectsInSet" : 500,
+                         |      "collationAlgorithms" : [ "i;unicode-casemap" ]
+                         |    },
+                         |    "urn:ietf:params:jmap:mail" : {
+                         |      "maxMailboxesPerEmail" : 10000000,
+                         |      "maxMailboxDepth" : null,
+                         |      "maxSizeMailboxName" : 200,
+                         |      "maxSizeAttachmentsPerEmail" : 20000000,
+                         |      "emailQuerySortOptions" : [ "receivedAt", "cc", "from", "to", "subject", "size", "sentAt", "hasKeyword", "uid", "Id" ],
+                         |      "mayCreateTopLevelMailbox" : true
+                         |    }
+                         |  },
+                         |  "accounts" : {
+                         |    "0fe275bf13ff761407c17f64b1dfae2f4b3186feea223d7267b79f873a105401" : {
+                         |      "name" : "bob@james.org",
+                         |      "isPersonal" : true,
+                         |      "isReadOnly" : false,
+                         |      "accountCapabilities" : {
+                         |        "urn:ietf:params:jmap:core" : {
+                         |          "maxSizeUpload" : 10000000,
+                         |          "maxConcurrentUpload" : 4,
+                         |          "maxSizeRequest" : 10000000,
+                         |          "maxConcurrentRequests" : 4,
+                         |          "maxCallsInRequest" : 16,
+                         |          "maxObjectsInGet" : 500,
+                         |          "maxObjectsInSet" : 500,
+                         |          "collationAlgorithms" : [ "i;unicode-casemap" ]
+                         |        },
+                         |        "urn:ietf:params:jmap:mail" : {
+                         |          "maxMailboxesPerEmail" : 10000000,
+                         |          "maxMailboxDepth" : null,
+                         |          "maxSizeMailboxName" : 200,
+                         |          "maxSizeAttachmentsPerEmail" : 20000000,
+                         |          "emailQuerySortOptions" : [ "receivedAt", "cc", "from", "to", "subject", "size", "sentAt", "hasKeyword", "uid", "Id" ],
+                         |          "mayCreateTopLevelMailbox" : true
+                         |        }
+                         |      }
+                         |    }
+                         |  },
+                         |  "primaryAccounts" : {
+                         |    "urn:ietf:params:jmap:core" : "0fe275bf13ff761407c17f64b1dfae2f4b3186feea223d7267b79f873a105401",
+                         |    "urn:ietf:params:jmap:mail" : "0fe275bf13ff761407c17f64b1dfae2f4b3186feea223d7267b79f873a105401"
+                         |  },
+                         |  "username" : "bob@james.org",
+                         |  "apiUrl" : "${BASE_PATH.toString}/jmap",
+                         |  "downloadUrl" : "${BASE_PATH.toString}/download",
+                         |  "uploadUrl" : "${BASE_PATH.toString}/upload",
+                         |  "eventSourceUrl" : "${BASE_PATH.toString}/eventSource",
+                         |  "state" : "000001"
+                         |}""".stripMargin
 }

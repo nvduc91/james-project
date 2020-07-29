@@ -19,6 +19,7 @@
 
 package org.apache.james.jmap.rfc8621.contract
 
+import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
@@ -34,6 +35,7 @@ import org.apache.james.core.{Domain, Username}
 import org.apache.james.jmap.JMAPUrls.JMAP
 import org.apache.james.jmap.draft.JmapGuiceProbe
 import org.apache.james.jmap.http.UserCredential
+import org.apache.james.jmap.model.JmapRfcConfiguration
 
 object Fixture {
   def baseRequestSpecBuilder(server: GuiceJamesServer) = new RequestSpecBuilder()
@@ -135,6 +137,7 @@ object Fixture {
       "xtedOK2JnQZn7t9sUzSrcyjWverm7gZkPptkIVoS8TsEeMMME5vFXe_nqkEG69q3kuBUm_33tbR5oNS0ZGZKlG9r41lHBjyf9J1xN4UYV8n866d" +
       "a7RPPCzshIWUtO0q9T2umWTnp-6OnOdBCkndrZmRR6pPxsD5YL0_77Wq8KT_5__fGA"
 
+<<<<<<< db39237628308982fc907b8e3fd1518a09de0c39
   val GET_ALL_MAILBOXES_REQUEST: String =
     """{
       |  "using": [
@@ -148,4 +151,7 @@ object Fixture {
       |      },
       |      "c1"]]
       |}""".stripMargin
+=======
+  val BASE_PATH = new URL("http://domain.com")
+>>>>>>> JAMES-3316: Integration test for session hardcoded prefixes
 }

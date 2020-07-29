@@ -86,10 +86,10 @@ public class RFC8621MethodsModule extends AbstractModule {
     JmapRfcConfiguration provideConfiguration(PropertiesProvider propertiesProvider) throws ConfigurationException, MalformedURLException {
         try {
             Configuration configuration = propertiesProvider.getConfiguration("jmap");
-            return new JmapRfcConfiguration(new URL(configuration.getString("jmap-rfc-base-path")));
+            return new JmapRfcConfiguration(new URL(configuration.getString("jmap-rfc-8621-base-path")));
         } catch (FileNotFoundException e) {
             LOGGER.warn("Could not find JMAP configuration file. JMAP server will not be enabled.");
-            return JmapRfcConfiguration.DEFAULT_JMAP_RFC_CONFIGURATION();
+            throw new ConfigurationException("Property[jmap-rfc-base-path] at 'jmap.properties' is mandatory.");
         }
     }
 }
