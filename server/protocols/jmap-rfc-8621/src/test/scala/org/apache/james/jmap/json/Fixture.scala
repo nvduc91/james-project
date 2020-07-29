@@ -19,14 +19,13 @@
 
 package org.apache.james.jmap.json
 
-import java.net.URL
-
 import eu.timepit.refined.auto._
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.Id.Id
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodName}
-import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, JmapRfcConfiguration, ResponseObject, ServerId}
-import play.api.libs.json.{JsValue, Json}
+import org.apache.james.jmap.model.JmapRfc8621Configuration.LOCALHOST_URL_PREFIX
+import org.apache.james.jmap.model.{ClientId, CreatedIds, Invocation, ResponseObject, ServerId}
+import play.api.libs.json.Json
 
 object Fixture {
   val id: Id = "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8"
@@ -49,9 +48,6 @@ object Fixture {
   val responseObject1: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1))
   val responseObject2: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation2))
   val responseObjectWithUnsupportedMethod: ResponseObject = ResponseObject(ResponseObject.SESSION_STATE, Seq(invocation1, unsupportedInvocation))
-
-  private val BASE_PATH = new URL("http://domain.com")
-  val JMAP_CONFIGURATION = JmapRfcConfiguration(BASE_PATH)
 
   val expected_session_object: String = s"""{
                          |  "capabilities" : {
@@ -106,10 +102,10 @@ object Fixture {
                          |    "urn:ietf:params:jmap:mail" : "0fe275bf13ff761407c17f64b1dfae2f4b3186feea223d7267b79f873a105401"
                          |  },
                          |  "username" : "bob@james.org",
-                         |  "apiUrl" : "${BASE_PATH.toString}/jmap",
-                         |  "downloadUrl" : "${BASE_PATH.toString}/download",
-                         |  "uploadUrl" : "${BASE_PATH.toString}/upload",
-                         |  "eventSourceUrl" : "${BASE_PATH.toString}/eventSource",
+                         |  "apiUrl" : "${LOCALHOST_URL_PREFIX}/jmap",
+                         |  "downloadUrl" : "${LOCALHOST_URL_PREFIX}/download",
+                         |  "uploadUrl" : "${LOCALHOST_URL_PREFIX}/upload",
+                         |  "eventSourceUrl" : "${LOCALHOST_URL_PREFIX}/eventSource",
                          |  "state" : "000001"
                          |}""".stripMargin
 }

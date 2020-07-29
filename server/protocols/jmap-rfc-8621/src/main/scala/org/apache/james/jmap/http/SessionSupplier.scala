@@ -19,15 +19,13 @@
 
 package org.apache.james.jmap.http
 
-import java.net.URL
-
 import javax.inject.Inject
 import org.apache.james.core.Username
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model._
 import reactor.core.scala.publisher.SMono
 
-class SessionSupplier @Inject() (val configuration: JmapRfcConfiguration){
+class SessionSupplier @Inject() (val configuration: JmapRfc8621Configuration){
   def generate(username: Username): SMono[Session] = {
     accounts(username)
       .map(account => Session(
@@ -35,10 +33,10 @@ class SessionSupplier @Inject() (val configuration: JmapRfcConfiguration){
         List(account),
         primaryAccounts(account.accountId),
         username,
-        apiUrl = new URL(s"${configuration.basePath}/jmap"),
-        downloadUrl = new URL(s"${configuration.basePath}/download"),
-        uploadUrl = new URL(s"${configuration.basePath}/upload"),
-        eventSourceUrl = new URL(s"${configuration.basePath}/eventSource")))
+        apiUrl = configuration.apiUrl,
+        downloadUrl = configuration.downloadUrl,
+        uploadUrl = configuration.uploadUrl,
+        eventSourceUrl = configuration.eventSourceUrl))
   }
 
   private def accounts(username: Username): SMono[Account] = SMono.defer(() =>

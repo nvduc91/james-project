@@ -20,9 +20,10 @@
 package org.apache.james.jmap.rfc8621;
 
 
+import static org.apache.james.jmap.model.JmapRfc8621Configuration.LOCALHOST_CONFIGURATION;
+
 import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -37,7 +38,7 @@ import org.apache.james.jmap.jwt.JWTAuthenticationStrategy;
 import org.apache.james.jmap.method.CoreEchoMethod;
 import org.apache.james.jmap.method.MailboxGetMethod;
 import org.apache.james.jmap.method.Method;
-import org.apache.james.jmap.model.JmapRfcConfiguration;
+import org.apache.james.jmap.model.JmapRfc8621Configuration;
 import org.apache.james.jmap.routes.JMAPApiRoutes;
 import org.apache.james.metrics.api.MetricFactory;
 import org.apache.james.utils.PropertiesProvider;
@@ -83,13 +84,13 @@ public class RFC8621MethodsModule extends AbstractModule {
 
     @Provides
     @Singleton
-    JmapRfcConfiguration provideConfiguration(PropertiesProvider propertiesProvider) throws ConfigurationException, MalformedURLException {
+    JmapRfc8621Configuration provideConfiguration(PropertiesProvider propertiesProvider) throws ConfigurationException {
         try {
             Configuration configuration = propertiesProvider.getConfiguration("jmap");
-            return new JmapRfcConfiguration(new URL(configuration.getString("jmap-rfc-8621-base-path")));
+            return JmapRfc8621Configuration.from(configuration.getString("url.prefix"));
         } catch (FileNotFoundException e) {
-            LOGGER.warn("Could not find JMAP configuration file. JMAP server will not be enabled.");
-            throw new ConfigurationException("Property[jmap-rfc-base-path] at 'jmap.properties' is mandatory.");
+            LOGGER.warn("Could not find JMAP configuration file [jmap.properties]. JMAP server will be enabled with default value.");
+            return LOCALHOST_CONFIGURATION();
         }
     }
 }

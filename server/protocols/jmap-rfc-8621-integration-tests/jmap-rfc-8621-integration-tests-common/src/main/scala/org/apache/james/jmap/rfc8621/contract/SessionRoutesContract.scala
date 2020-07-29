@@ -32,6 +32,7 @@ import org.apache.http.HttpStatus.SC_OK
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.draft.JmapGuiceProbe
 import org.apache.james.jmap.http.UserCredential
+import org.apache.james.jmap.model.JmapRfc8621Configuration.LOCALHOST_URL_PREFIX
 import org.apache.james.jmap.rfc8621.contract.Fixture._
 import org.apache.james.jmap.rfc8621.contract.SessionRoutesContract.{EXPECTED_BASE_PATH, expected_session_object}
 import org.apache.james.jmap.rfc8621.contract.tags.CategoryTags
@@ -98,10 +99,10 @@ object SessionRoutesContract {
                          |    "urn:apache:james:params:jmap:mail:shares": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6"
                          |  },
                          |  "username" : "bob@james.org",
-                         |  "apiUrl" : "${BASE_PATH.toString}/jmap",
-                         |  "downloadUrl" : "${BASE_PATH.toString}/download",
-                         |  "uploadUrl" : "${BASE_PATH.toString}/upload",
-                         |  "eventSourceUrl" : "${BASE_PATH.toString}/eventSource",
+                         |  "apiUrl" : "${LOCALHOST_URL_PREFIX}/jmap",
+                         |  "downloadUrl" : "${LOCALHOST_URL_PREFIX}/download",
+                         |  "uploadUrl" : "${LOCALHOST_URL_PREFIX}/upload",
+                         |  "eventSourceUrl" : "${LOCALHOST_URL_PREFIX}/eventSource",
                          |  "state" : "000001"
                          |}""".stripMargin
   private val EXPECTED_BASE_PATH: String = "/jmap"
