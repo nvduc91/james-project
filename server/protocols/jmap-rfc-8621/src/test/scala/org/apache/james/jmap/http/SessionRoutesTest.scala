@@ -31,8 +31,9 @@ import org.apache.http.HttpStatus
 import org.apache.james.core.Username
 import org.apache.james.jmap._
 import org.apache.james.jmap.http.SessionRoutesTest.{BOB, TEST_CONFIGURATION}
-import org.apache.james.jmap.json.Fixture.{JMAP_CONFIGURATION, expected_session_object}
+import org.apache.james.jmap.json.Fixture.expected_session_object
 import org.apache.james.jmap.json.Serializer
+import org.apache.james.jmap.model.JmapRfc8621Configuration
 import org.apache.james.mailbox.MailboxSession
 import org.apache.james.mailbox.model.TestId
 import org.mockito.ArgumentMatchers.any
@@ -66,7 +67,7 @@ class SessionRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
 
     val sessionRoutes = new SessionRoutes(
       serializer = new Serializer(new TestId.Factory),
-      sessionSupplier = new SessionSupplier(JMAP_CONFIGURATION),
+      sessionSupplier = new SessionSupplier(JmapRfc8621Configuration.LOCALHOST_CONFIGURATION),
       authenticator = mockedAuthFilter)
     jmapServer = new JMAPServer(
       TEST_CONFIGURATION,
