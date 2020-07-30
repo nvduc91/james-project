@@ -28,14 +28,16 @@ object JmapRfc8621Configuration {
   val LOCALHOST_URL_PREFIX: String = "http://localhost"
   private def from(urlPrefixString: String): JmapRfc8621Configuration = JmapRfc8621Configuration(urlPrefixString)
   var LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
+  val URL_PREFIX_PROPERTIES: String = "url.prefix"
 
-  def from(configuration: Configuration): JmapRfc8621Configuration = JmapRfc8621Configuration(configuration.getString("url.prefix"))
+  def from(configuration: Configuration): JmapRfc8621Configuration =
+    JmapRfc8621Configuration(Option(configuration.getString(URL_PREFIX_PROPERTIES)).getOrElse(LOCALHOST_URL_PREFIX))
 }
 
 case class JmapRfc8621Configuration(urlPrefixString: String) {
   val urlPrefix: URL = new URL(urlPrefixString)
-  val apiUrl: URL = new URL(s"${urlPrefixString}/jmap")
-  val downloadUrl: URL = new URL(s"${urlPrefixString}/download")
-  val uploadUrl: URL = new URL(s"${urlPrefixString}/upload")
-  val eventSourceUrl: URL = new URL(s"${urlPrefixString}/eventSource")
+  val apiUrl: URL = new URL(s"$urlPrefixString/jmap")
+  val downloadUrl: URL = new URL(s"$urlPrefixString/download")
+  val uploadUrl: URL = new URL(s"$urlPrefixString/upload")
+  val eventSourceUrl: URL = new URL(s"$urlPrefixString/eventSource")
 }
