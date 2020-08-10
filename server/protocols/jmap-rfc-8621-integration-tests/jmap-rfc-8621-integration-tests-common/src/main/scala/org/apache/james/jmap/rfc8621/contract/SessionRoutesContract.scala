@@ -32,7 +32,6 @@ import org.apache.http.HttpStatus.SC_OK
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.draft.JmapGuiceProbe
 import org.apache.james.jmap.http.UserCredential
-import org.apache.james.jmap.model.JmapRfc8621Configuration
 import org.apache.james.jmap.rfc8621.contract.Fixture._
 import org.apache.james.jmap.rfc8621.contract.SessionRoutesContract.{EXPECTED_BASE_PATH, expected_session_object}
 import org.apache.james.jmap.rfc8621.contract.tags.CategoryTags
@@ -40,7 +39,7 @@ import org.apache.james.utils.DataProbeImpl
 import org.junit.jupiter.api.{BeforeEach, Tag, Test}
 
 object SessionRoutesContract {
-  private val expected_session_object: String = s"""{
+  private val expected_session_object: String = """{
                          |  "capabilities" : {
                          |    "urn:ietf:params:jmap:core" : {
                          |      "maxSizeUpload" : 10000000,
@@ -98,11 +97,11 @@ object SessionRoutesContract {
                          |    "urn:apache:james:params:jmap:mail:quota": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6",
                          |    "urn:apache:james:params:jmap:mail:shares": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6"
                          |  },
-                         |  "username" : "bob@james.org",
-                         |  "apiUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/jmap",
-                         |  "downloadUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/download",
-                         |  "uploadUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/upload",
-                         |  "eventSourceUrl" : "${JmapRfc8621Configuration.LOCALHOST_URL_PREFIX}/eventSource",
+                         |  "username" : "bob@domain.tld",
+                         |  "apiUrl" : "http://domain.com/jmap",
+                         |  "downloadUrl" : "http://domain.com/download",
+                         |  "uploadUrl" : "http://domain.com/upload",
+                         |  "eventSourceUrl" : "http://domain.com/eventSource",
                          |  "state" : "000001"
                          |}""".stripMargin
   private val EXPECTED_BASE_PATH: String = "/jmap"

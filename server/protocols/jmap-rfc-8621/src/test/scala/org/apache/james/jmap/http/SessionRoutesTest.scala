@@ -27,6 +27,7 @@ import io.restassured.builder.RequestSpecBuilder
 import io.restassured.config.EncoderConfig.encoderConfig
 import io.restassured.config.RestAssuredConfig.newConfig
 import io.restassured.http.ContentType
+import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.apache.http.HttpStatus
 import org.apache.james.core.Username
 import org.apache.james.jmap._
@@ -167,6 +168,6 @@ class SessionRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
                          |  "state" : "000001"
                          |}""".stripMargin
 
-    Json.parse(sessionJson) should equal(Json.parse(expectedJson))
+    assertThatJson(sessionJson).isEqualTo(expectedJson)
   }
 }
