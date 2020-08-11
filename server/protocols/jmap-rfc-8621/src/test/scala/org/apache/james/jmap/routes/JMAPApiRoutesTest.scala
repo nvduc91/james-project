@@ -123,7 +123,7 @@ object JMAPApiRoutesTest {
       |        "arg1": "arg1data",
       |        "arg2": "arg2data"
       |      },
-      |      "c1"
+      |      "c2"
       |     ]
       |  ]
       |}""".stripMargin
@@ -185,7 +185,7 @@ object JMAPApiRoutesTest {
       |        "arg1": "arg1data",
       |        "arg2": "arg2data"
       |      },
-      |      "c1"
+      |      "c2"
       |    ]
       |  ]
       |}""".stripMargin
@@ -466,16 +466,16 @@ class JMAPApiRoutesTest extends AnyFlatSpec with BeforeAndAfter with Matchers {
 
     val response = RestAssured
       .`given`()
-      .headers(headers)
-      .body(REQUEST_OBJECT_WITH_2_ECHO_METHOD_CALL)
+        .headers(headers)
+        .body(REQUEST_OBJECT_WITH_2_ECHO_METHOD_CALL)
       .when()
-      .post()
+        .post()
       .`then`
-      .statusCode(HttpStatus.SC_OK)
-      .contentType(ContentType.JSON)
+        .statusCode(HttpStatus.SC_OK)
+        .contentType(ContentType.JSON)
       .extract()
-      .body()
-      .asString()
+        .body()
+        .asString()
 
     assertThatJson(response).isEqualTo(SERVER_FAIL_RESPONSE_OBJECT)
   }
