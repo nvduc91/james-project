@@ -135,7 +135,10 @@ public class SetFilterMethod implements Method {
         }  catch (DuplicatedRuleException e) {
             LOGGER.debug("Duplicated rules", e);
             return Mono.just(duplicatedIdsError(methodCallId, e));
-        }  catch (Exception e) {
+        }  catch (IllegalArgumentException e) {
+            LOGGER.warn("IllegalArgumentException of setting Rules", e);
+            return Mono.just(invalidArgumentsError(methodCallId, e.getMessage()));
+        } catch (Exception e) {
             LOGGER.warn("Failed setting Rules", e);
             return Mono.just(unKnownError(methodCallId));
         }
@@ -186,12 +189,27 @@ public class SetFilterMethod implements Method {
     }
 
     private JmapResponse unKnownError(MethodCallId methodCallId) {
+        return unKnownError(methodCallId, "Failed to retrieve filter");
+    }
+
+    private JmapResponse invalidArgumentsError(MethodCallId methodCallId, String errorMessage) {
+        return JmapResponse.builder()
+            .methodCallId(methodCallId)
+            .responseName(RESPONSE_NAME)
+            .response(ErrorResponse.builder()
+                .type(SetError.Type.INVALID_ARGUMENTS.asString())
+                .description(errorMessage)
+                .build())
+            .build();
+    }
+
+    private JmapResponse unKnownError(MethodCallId methodCallId, String errorMessage) {
         return JmapResponse.builder()
             .methodCallId(methodCallId)
             .responseName(RESPONSE_NAME)
             .response(ErrorResponse.builder()
                 .type(SetError.Type.ERROR.asString())
-                .description("Failed to retrieve filter")
+                .description(errorMessage)
                 .build())
             .build();
     }
