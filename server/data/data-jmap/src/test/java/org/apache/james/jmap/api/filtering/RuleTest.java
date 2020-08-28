@@ -107,7 +107,7 @@ class RuleTest {
     }
 
     @Test
-    void shouldWhenNameEmpty() {
+    void shouldFailWhenNameEmpty() {
         assertThatThrownBy(() ->
             Rule.builder()
                 .id(UNIQUE_ID)
@@ -119,7 +119,7 @@ class RuleTest {
     }
 
     @Test
-    void shouldWhenNameBlank() {
+    void shouldFailWhenNameBlank() {
         assertThatThrownBy(() ->
             Rule.builder()
                 .id(UNIQUE_ID)
@@ -131,7 +131,7 @@ class RuleTest {
     }
 
     @Test
-    void shouldWhenNameNull() {
+    void shouldFailWhenNameNull() {
         assertThatThrownBy(() ->
             Rule.builder()
                 .id(UNIQUE_ID)

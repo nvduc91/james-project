@@ -88,7 +88,7 @@ public class Rule {
             }
             
             public static Field of(String fieldName) {
-                return find(fieldName).orElseThrow(() -> new IllegalStateException("'" + fieldName + "' is not a valid field name"));
+                return find(fieldName).orElseThrow(() -> new IllegalArgumentException("'" + fieldName + "' is not a valid field name"));
             }
             
             private final String fieldName;
@@ -115,7 +115,7 @@ public class Rule {
             }
             
             public static Comparator of(String comparatorName) {
-                return find(comparatorName).orElseThrow(() -> new IllegalStateException("'" + comparatorName + "' is not a valid comparator name"));
+                return find(comparatorName).orElseThrow(() -> new IllegalArgumentException("'" + comparatorName + "' is not a valid comparator name"));
             }
             
             private final String comparatorName;
@@ -294,6 +294,12 @@ public class Rule {
         }
 
         public Rule build() {
+            Preconditions.checkState(id != null, "`id` is mandatory");
+            Preconditions.checkState(StringUtils.isNotBlank(name), "`name` is mandatory");
+            Preconditions.checkState(StringUtils.isNotEmpty(name), "`name` is mandatory");
+            Preconditions.checkState(condition != null, "`condition` is mandatory");
+            Preconditions.checkState(action != null, "`action` is mandatory");
+
             return new Rule(id, name, condition, action);
         }
 
@@ -308,13 +314,7 @@ public class Rule {
     private final Condition condition;
     private final Action action;
 
-    public Rule(Id id, String name, Condition condition, Action action) {
-        Preconditions.checkArgument(id != null, "`id` is mandatory");
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "`name` is mandatory");
-        Preconditions.checkArgument(StringUtils.isNotEmpty(name), "`name` is mandatory");
-        Preconditions.checkArgument(condition != null, "`condition` is mandatory");
-        Preconditions.checkArgument(action != null, "`action` is mandatory");
-
+    private Rule(Id id, String name, Condition condition, Action action) {
         this.id = id;
         this.name = name;
         this.condition = condition;

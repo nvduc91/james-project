@@ -128,7 +128,7 @@ public class SetFilterMethod implements Method {
         try {
             return updateFilter(methodCallId, request, mailboxSession.getUser())
                 .doOnEach(ReactorUtils.logOnError(e -> LOGGER.warn("Failed setting Rules", e)))
-                .onErrorResume(e -> Mono.just(unKnownError(methodCallId)));
+                .onErrorResume(e -> Mono.just(unknownError(methodCallId)));
         } catch (MultipleMailboxIdException e) {
             LOGGER.debug("Rule targeting several mailboxes", e);
             return Mono.just(multipleMailboxesError(methodCallId, e));
@@ -138,9 +138,12 @@ public class SetFilterMethod implements Method {
         }  catch (IllegalArgumentException e) {
             LOGGER.warn("IllegalArgumentException of setting Rules", e);
             return Mono.just(invalidArgumentsError(methodCallId, e.getMessage()));
+        } catch (IllegalStateException e) {
+            LOGGER.warn("IllegalStateException of setting Rules", e);
+            return Mono.just(invalidArgumentsError(methodCallId, e.getMessage()));
         } catch (Exception e) {
             LOGGER.warn("Failed setting Rules", e);
-            return Mono.just(unKnownError(methodCallId));
+            return Mono.just(unknownError(methodCallId));
         }
     }
 
@@ -188,8 +191,8 @@ public class SetFilterMethod implements Method {
         }
     }
 
-    private JmapResponse unKnownError(MethodCallId methodCallId) {
-        return unKnownError(methodCallId, "Failed to retrieve filter");
+    private JmapResponse unknownError(MethodCallId methodCallId) {
+        return unknownError(methodCallId, "Failed to retrieve filter");
     }
 
     private JmapResponse invalidArgumentsError(MethodCallId methodCallId, String errorMessage) {
@@ -203,7 +206,7 @@ public class SetFilterMethod implements Method {
             .build();
     }
 
-    private JmapResponse unKnownError(MethodCallId methodCallId, String errorMessage) {
+    private JmapResponse unknownError(MethodCallId methodCallId, String errorMessage) {
         return JmapResponse.builder()
             .methodCallId(methodCallId)
             .responseName(RESPONSE_NAME)

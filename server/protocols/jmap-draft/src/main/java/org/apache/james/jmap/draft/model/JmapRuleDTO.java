@@ -171,11 +171,13 @@ public class JmapRuleDTO {
     }
 
     public Rule toRule() {
+        Preconditions.checkState(conditionDTO != null, "`condition` is mandatory");
+        Preconditions.checkState(actionDTO != null, "`action` is mandatory");
+
         return Rule.builder()
             .id(Rule.Id.of(id))
             .name(name)
             .condition(conditionDTO.toCondition())
-            .name(name)
             .action(actionDTO.toAction())
             .build();
     }

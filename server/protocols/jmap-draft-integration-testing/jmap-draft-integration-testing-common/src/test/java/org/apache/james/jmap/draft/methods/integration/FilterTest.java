@@ -309,7 +309,7 @@ public abstract class FilterTest {
     }
 
     @Test
-    public void setFilterShouldRejectRuleWithInvalidRuleCondition() {
+    public void setFilterShouldRejectRuleWithoutRuleCondition() {
         MailboxId mailbox = randomMailboxId();
 
         given()
@@ -334,12 +334,12 @@ public abstract class FilterTest {
         .when()
             .post("/jmap")
         .then()
-            .body(ARGUMENTS + ".type", equalTo("anErrorOccurred"))
-            .body(ARGUMENTS + ".description", equalTo("Failed to retrieve filter"));
+            .body(ARGUMENTS + ".type", equalTo("invalidArguments"))
+            .body(ARGUMENTS + ".description", equalTo("`condition` is mandatory"));
     }
 
     @Test
-    public void setFilterShouldRejectRuleWithInvalidRuleAction() {
+    public void setFilterShouldRejectRuleWithInvalidRuleCondition() {
         MailboxId mailbox = randomMailboxId();
 
         given()
@@ -352,11 +352,13 @@ public abstract class FilterTest {
                 "      \"id\": \"3000-34e\"," +
                 "      \"name\": \"some name\"," +
                 "      \"condition\": {" +
-                "        \"field\": \"subject\"," +
-                "        \"comparator\": \"contains\"," +
-                "        \"value\": \"question\"" +
-                "      }," +
-                "      \"action\": null" +
+                "        \"field\": \"subject\" " +
+                "       }," +
+                "      \"action\": {" +
+                "        \"appendIn\": {" +
+                "          \"mailboxIds\": [\"" + mailbox.serialize() + "\"]" +
+                "        }" +
+                "      }" +
                 "    }" +
                 "  ]}, " +
                 "\"#0\"" +
@@ -364,8 +366,8 @@ public abstract class FilterTest {
         .when()
             .post("/jmap")
         .then()
-             .body(ARGUMENTS + ".type", equalTo("anErrorOccurred"))
-             .body(ARGUMENTS + ".description", equalTo("Failed to retrieve filter"));
+            .body(ARGUMENTS + ".type", equalTo("invalidArguments"))
+            .body(ARGUMENTS + ".description", equalTo("'null' is not a valid comparator name"));
     }
 
     @Test
