@@ -92,7 +92,7 @@ class RuleTest {
                 .condition(CONDITION)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -103,7 +103,7 @@ class RuleTest {
                 .condition(CONDITION)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -115,7 +115,7 @@ class RuleTest {
                 .condition(CONDITION)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -127,7 +127,7 @@ class RuleTest {
                 .condition(CONDITION)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -139,7 +139,7 @@ class RuleTest {
                 .condition(CONDITION)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -150,7 +150,7 @@ class RuleTest {
                 .name(NAME)
                 .action(ACTION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -161,7 +161,7 @@ class RuleTest {
                 .name(NAME)
                 .condition(CONDITION)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
