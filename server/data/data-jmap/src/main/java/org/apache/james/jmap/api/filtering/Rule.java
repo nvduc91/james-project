@@ -35,7 +35,6 @@ public class Rule {
     public static class Id {
 
         public static Id of(String id) {
-            Preconditions.checkArgument(StringUtils.isNotEmpty(id), "`id` is mandatory");
             Preconditions.checkArgument(StringUtils.isNotBlank(id), "`id` is mandatory");
             return new Id(id);
         }
@@ -296,7 +295,6 @@ public class Rule {
         public Rule build() {
             Preconditions.checkState(id != null, "`id` is mandatory");
             Preconditions.checkState(StringUtils.isNotBlank(name), "`name` is mandatory");
-            Preconditions.checkState(StringUtils.isNotEmpty(name), "`name` is mandatory");
             Preconditions.checkState(condition != null, "`condition` is mandatory");
             Preconditions.checkState(action != null, "`action` is mandatory");
 
