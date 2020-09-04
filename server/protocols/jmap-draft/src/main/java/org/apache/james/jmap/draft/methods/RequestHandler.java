@@ -83,7 +83,12 @@ public class RequestHandler {
                 .onErrorResume(
                     e -> e.getCause() instanceof JmapFieldNotSupportedException,
                     e -> errorNotImplemented((JmapFieldNotSupportedException) e.getCause(), request))
-                .onErrorResume(IOException.class, e -> error(request, generateInvalidArgumentError(e.getMessage())));
+                .onErrorResume(IOException.class, e -> {
+                    if (e.getCause() != null) {
+                        return error(request, generateInvalidArgumentError(e.getCause().getMessage()));
+                    }
+                    return error(request, generateInvalidArgumentError(e.getMessage()));
+                });
     }
 
     public ErrorResponse generateInvalidArgumentError(String description) {
