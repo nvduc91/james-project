@@ -21,7 +21,6 @@ package org.apache.james.jmap.draft.model;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.james.jmap.api.filtering.Rule;
 import org.apache.james.jmap.draft.model.deserialization.JmapRuleDTODeserializer;
 
