@@ -280,7 +280,10 @@ class Serializer @Inject() (mailboxIdFactory: MailboxId.Factory) {
   private implicit val limitFormat: Format[Limit] = Json.valueFormat[Limit]
   private implicit val emailNotFoundWrites: Writes[EmailNotFound] = Json.valueWrites[EmailNotFound]
   private implicit val messageIdWrites: Writes[MessageId] = id => JsString(id.serialize())
-
+  private implicit val keywordWrites: Writes[Keyword] = Json.valueWrites[Keyword]
+  private implicit val keywordsWrites: Writes[Keywords] = keywords => JsObject(keywords.asMap.map {
+    case (keyword, b) => (keyword.flagName, JsBoolean(b))
+  })
   private implicit def bodyValueMapWrites(implicit bodyValueWriter: Writes[EmailBodyValue]): Writes[Map[PartId, EmailBodyValue]] =
     mapWrites[PartId, EmailBodyValue](_.value.toString(), bodyValueWriter)
   private def bodyPartWritesWithPropertyFilter(properties: Properties): Writes[EmailBodyPart] =

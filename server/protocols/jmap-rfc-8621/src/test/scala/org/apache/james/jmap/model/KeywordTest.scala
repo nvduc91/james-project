@@ -34,7 +34,7 @@ object KeywordTest {
 class KeywordTest extends AnyWordSpec with Matchers {
 
   "respect bean contract" in {
-    EqualsVerifier.forClass(classOf[Keyword]).verify()
+    EqualsVerifier.forClass(classOf[Keyword]).withNonnullFields("flagName").verify()
   }
 
   "throw when flagName length less than minlength" in {
@@ -113,14 +113,6 @@ class KeywordTest extends AnyWordSpec with Matchers {
   "isNotNonExposedImapKeyword should return true when any userFlag" in {
     val keyword = Keyword.of(KeywordTest.ANY_KEYWORD).get
     assertThat(keyword.isExposedImapKeyword).isTrue
-  }
-
-  "isDraft should return true when draft" in {
-    assertThat(Keyword.DRAFT.isDraft).isTrue
-  }
-
-  "isDraft should return false when non draft" in {
-    assertThat(Keyword.DELETED.isDraft).isFalse
   }
 
   "asSystemFlag should return systemFlag" in {
