@@ -27,6 +27,8 @@ import org.apache.james.jmap.model.DefaultCapabilities.{CORE_CAPABILITY, MAIL_CA
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodName}
 import org.apache.james.jmap.model._
 import org.apache.james.jmap.routes.ProcessingContext
+import org.apache.james.mailbox.exception.{MailboxNotFoundException}
+import org.apache.james.jmap.utils.search.MailboxFilter
 import org.apache.james.mailbox.model.SearchQuery.Sort.SortClause
 import org.apache.james.mailbox.model.{MultimailboxesSearchQuery, SearchQuery}
 import org.apache.james.mailbox.{MailboxManager, MailboxSession}
@@ -47,12 +49,13 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
         .flatMap(processRequest(mailboxSession, invocation, _))
         .onErrorResume {
           case e: IllegalArgumentException => SMono.just(Invocation.error(ErrorCode.InvalidArguments, e.getMessage, invocation.methodCallId))
+          case e: MailboxNotFoundException => SMono.just(Invocation.error(ErrorCode.InvalidArguments, e.getMessage, invocation.methodCallId))
           case e: Throwable => SMono.raiseError(e)
         }
         .map(invocationResult => (invocationResult, processingContext)))
 
   private def processRequest(mailboxSession: MailboxSession, invocation: Invocation, request: EmailQueryRequest): SMono[Invocation] = {
-    val searchQuery = MultimailboxesSearchQuery.from(new SearchQuery.Builder().sorts(new SearchQuery.Sort(SortClause.Arrival, SearchQuery.Sort.Order.REVERSE)).build()).build()
+    val searchQuery = searchQueryFromRequest(request)
     SFlux.fromPublisher(mailboxManager.search(searchQuery, mailboxSession, Limit.default.value))
       .collectSeq()
       .map(ids => EmailQueryResponse(accountId = request.accountId,
@@ -64,10 +67,17 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
       .map(response => Invocation(methodName = methodName, arguments = Arguments(serializer.serialize(response)), methodCallId = invocation.methodCallId))
   }
 
+  private def searchQueryFromRequest(request: EmailQueryRequest): MultimailboxesSearchQuery = {
+    val query = new SearchQuery.Builder()
+    val defaultSort = new SearchQuery.Sort(SortClause.Arrival, SearchQuery.Sort.Order.REVERSE)
+    val querySorted = query.sorts(defaultSort)
+
+    MailboxFilter.buildQuery(request, querySorted.build())
+  }
+
   private def asEmailQueryRequest(arguments: Arguments): SMono[EmailQueryRequest] =
     serializer.deserializeEmailQueryRequest(arguments.value) match {
       case JsSuccess(emailQueryRequest, _) => SMono.just(emailQueryRequest)
       case errors: JsError => SMono.raiseError(new IllegalArgumentException(ResponseSerializer.serialize(errors).toString))
     }
-
 }
