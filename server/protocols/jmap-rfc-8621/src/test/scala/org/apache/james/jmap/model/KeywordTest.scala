@@ -22,9 +22,10 @@ package org.apache.james.jmap.model
 import javax.mail.Flags
 import nl.jqno.equalsverifier.EqualsVerifier
 import org.apache.commons.lang3.StringUtils
-import org.assertj.core.api.Assertions.{assertThat, assertThatCode, assertThatThrownBy}
+import org.assertj.core.api.Assertions.{assertThat, assertThatCode}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.util.Failure
 
 object KeywordTest {
   private val FLAG_NAME_MAX_LENGTH = 255
@@ -38,12 +39,12 @@ class KeywordTest extends AnyWordSpec with Matchers {
   }
 
   "throw when flagName length less than minlength" in {
-    assertThatThrownBy(() => Keyword.of("")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName lengthMore than maxlength" in {
     val keywordTooLong: String = StringUtils.repeat("a", KeywordTest.FLAG_NAME_MAX_LENGTH + 1)
-    assertThatThrownBy(() => Keyword.of(keywordTooLong)).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of(keywordTooLong)).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "createNewOne when flagName length equals maxlength" in {
@@ -59,43 +60,43 @@ class KeywordTest extends AnyWordSpec with Matchers {
   }
 
   "throw when flagName contains percentageCharacter" in {
-    assertThatThrownBy(() => Keyword.of("a%")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a%")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains leftBracket" in {
-    assertThatThrownBy(() => Keyword.of("a[")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a[")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains rightBracket" in {
-    assertThatThrownBy(() => Keyword.of("a]")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a]")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains leftBrace" in {
-    assertThatThrownBy(() => Keyword.of("a{")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a{")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains slash" in {
-    assertThatThrownBy(() => Keyword.of("a\\")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a\\")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName containsStar" in {
-    assertThatThrownBy(() => Keyword.of("a*")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a*")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName containsQuote" in {
-    assertThatThrownBy(() => Keyword.of("a\"")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a\"")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains openingParenthesis" in {
-    assertThatThrownBy(() => Keyword.of("a(")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a(")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains closingParenthesis" in {
-    assertThatThrownBy(() => Keyword.of("a)")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a)")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "throw when flagName contains space character" in {
-    assertThatThrownBy(() => Keyword.of("a b")).isInstanceOf(classOf[IllegalArgumentException])
+    assertThat(Keyword.of("a b")).isInstanceOf(classOf[Failure[IllegalArgumentException]])
   }
 
   "isNotNonExposedImapKeyword should return false when deleted" in {
