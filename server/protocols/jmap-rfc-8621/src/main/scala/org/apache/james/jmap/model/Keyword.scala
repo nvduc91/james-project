@@ -53,7 +53,7 @@ object Keyword {
   def parse(flagName: String): Either[String, Keyword] = Either.cond(isValid(flagName), Keyword(flagName), VALIDATION_MESSAGE)
 
   def of(flagName: String): Try[Keyword] = parse(flagName) match {
-    case Left(errorMessage: String) => Failure(throw new IllegalArgumentException(errorMessage))
+    case Left(errorMessage: String) => Failure(new IllegalArgumentException(errorMessage))
     case Right(keyword: Keyword) => Success(keyword)
   }
 
