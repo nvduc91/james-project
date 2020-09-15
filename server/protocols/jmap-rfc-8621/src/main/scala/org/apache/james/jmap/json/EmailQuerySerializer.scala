@@ -20,8 +20,8 @@
 package org.apache.james.jmap.json
 
 import javax.inject.Inject
-import org.apache.james.jmap.mail.{EmailQueryRequest, EmailQueryResponse, Limit, Position, QueryState}
-import org.apache.james.jmap.model._
+import org.apache.james.jmap.mail.{IsCalculateChanges, Collation, Comparator, EmailQueryRequest, EmailQueryResponse, IsAscending, Limit, Position, QueryState, ReceivedAtSortProperty, SortProperty}
+import org.apache.james.jmap.model.AccountId
 import org.apache.james.mailbox.model.{MailboxId, MessageId}
 import play.api.libs.json._
 
@@ -37,11 +37,27 @@ class EmailQuerySerializer @Inject()(mailboxIdFactory: MailboxId.Factory) {
     case _ => JsError()
   }
 
-  private implicit val emailQueryRequestReads: Reads[EmailQueryRequest] = Json.reads[EmailQueryRequest]
+  private implicit val CanCalculateChangesFormat: Format[IsCalculateChanges] = Json.valueFormat[IsCalculateChanges]
+
   private implicit val queryStateWrites: Writes[QueryState] = Json.valueWrites[QueryState]
   private implicit val positionFormat: Format[Position] = Json.valueFormat[Position]
   private implicit val limitFormat: Format[Limit] = Json.valueFormat[Limit]
   private implicit val messageIdWrites: Writes[MessageId] = id => JsString(id.serialize())
+
+  private implicit val sortPropertyReads: Reads[SortProperty] = {
+    case JsString("receivedAt") => JsSuccess(ReceivedAtSortProperty)
+    case JsString(others) => JsError(s"$others is not a supported sort property")
+    case _ => JsError(s"Expecting a JsString to represent a sort property")
+  }
+  private implicit val sortPropertyWrites: Writes[SortProperty] = {
+    case ReceivedAtSortProperty => JsString("receivedAt")
+  }
+
+  private implicit val isAscendingFormat: Format[IsAscending] = Json.valueFormat[IsAscending]
+  private implicit val collationFormat: Format[Collation] = Json.valueFormat[Collation]
+  private implicit val comparatorFormat: Format[Comparator] = Json.format[Comparator]
+
+  private implicit val emailQueryRequestReads: Reads[EmailQueryRequest] = Json.reads[EmailQueryRequest]
 
   private implicit def emailQueryResponseWrites: OWrites[EmailQueryResponse] = Json.writes[EmailQueryResponse]
 

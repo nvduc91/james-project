@@ -21,21 +21,21 @@ package org.apache.james.jmap.method
 import eu.timepit.refined.auto._
 import javax.inject.Inject
 import org.apache.james.jmap.json.{EmailQuerySerializer, ResponseSerializer}
-import org.apache.james.jmap.mail.{EmailQueryRequest, EmailQueryResponse, Limit, Position, QueryState}
+import org.apache.james.jmap.mail.{Comparator, EmailQueryRequest, EmailQueryResponse, IsCalculateChanges, Limit, Position, QueryState}
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.DefaultCapabilities.{CORE_CAPABILITY, MAIL_CAPABILITY}
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodName}
-import org.apache.james.jmap.model._
+import org.apache.james.jmap.model.{Capabilities, ErrorCode, Invocation}
 import org.apache.james.jmap.routes.ProcessingContext
-import org.apache.james.mailbox.exception.{MailboxNotFoundException}
-import org.apache.james.jmap.utils.search.MailboxFilter
-import org.apache.james.mailbox.model.SearchQuery.Sort.SortClause
+import org.apache.james.mailbox.exception.MailboxNotFoundException
 import org.apache.james.mailbox.model.{MultimailboxesSearchQuery, SearchQuery}
 import org.apache.james.mailbox.{MailboxManager, MailboxSession}
 import org.apache.james.metrics.api.MetricFactory
 import org.reactivestreams.Publisher
 import play.api.libs.json.{JsError, JsSuccess}
 import reactor.core.scala.publisher.{SFlux, SMono}
+
+import scala.jdk.CollectionConverters._
 
 class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
                                   mailboxManager: MailboxManager,
@@ -55,24 +55,20 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
         .map(invocationResult => (invocationResult, processingContext)))
 
   private def processRequest(mailboxSession: MailboxSession, invocation: Invocation, request: EmailQueryRequest): SMono[Invocation] = {
-    val searchQuery = searchQueryFromRequest(request)
+    val comparators: List[Comparator] = request.comparator.getOrElse(Set(Comparator.default)).toList
+    val searchTerm: SearchQuery = new SearchQuery.Builder().sorts(comparators.map(_.toSort).asJava).build()
+    val searchQuery = MultimailboxesSearchQuery.from(searchTerm).build()
+
     SFlux.fromPublisher(mailboxManager.search(searchQuery, mailboxSession, Limit.default.value))
       .collectSeq()
       .map(ids => EmailQueryResponse(accountId = request.accountId,
         queryState = QueryState.forIds(ids),
-        canCalculateChanges = false,
+        canCalculateChanges = IsCalculateChanges.CANT,
         ids = ids,
         position = Position.zero,
+        sort = Some(comparators),
         limit = Some(Limit.default)))
       .map(response => Invocation(methodName = methodName, arguments = Arguments(serializer.serialize(response)), methodCallId = invocation.methodCallId))
-  }
-
-  private def searchQueryFromRequest(request: EmailQueryRequest): MultimailboxesSearchQuery = {
-    val query = new SearchQuery.Builder()
-    val defaultSort = new SearchQuery.Sort(SortClause.Arrival, SearchQuery.Sort.Order.REVERSE)
-    val querySorted = query.sorts(defaultSort)
-
-    MailboxFilter.buildQuery(request, querySorted.build())
   }
 
   private def asEmailQueryRequest(arguments: Arguments): SMono[EmailQueryRequest] =
