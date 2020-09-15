@@ -21,11 +21,12 @@ package org.apache.james.jmap.mail
 
 import com.google.common.hash.Hashing
 import org.apache.james.jmap.model.AccountId
-import org.apache.james.mailbox.model.{MailboxId, MessageId}
+import org.apache.james.mailbox.model.SearchQuery.Sort.SortClause
+import org.apache.james.mailbox.model.{MailboxId, MessageId, SearchQuery}
 
 case class FilterCondition(inMailbox: Option[MailboxId], inMailboxOtherThan: Option[Seq[MailboxId]])
 
-case class EmailQueryRequest(accountId: AccountId, filter: Option[FilterCondition])
+case class EmailQueryRequest(accountId: AccountId, filter: Option[FilterCondition], comparator: Option[Set[Comparator]])
 
 case class Position(value: Int) extends AnyVal
 object Position{
@@ -36,6 +37,33 @@ object Limit {
   val default: Limit = Limit(256L)
 }
 case class QueryState(value: String) extends AnyVal
+
+sealed trait SortProperty {
+  def toSortClause: SortClause
+}
+case object ReceivedAtSortProperty extends SortProperty {
+  override def toSortClause: SortClause = SortClause.Arrival
+}
+
+object IsAscending {
+  val DESCENDING: IsAscending = IsAscending(false)
+}
+case class IsAscending(sortByASC: Boolean) extends AnyVal {
+  def toSortOrder: SearchQuery.Sort.Order = if (sortByASC) SearchQuery.Sort.Order.NATURAL else SearchQuery.Sort.Order.REVERSE
+
+}
+
+object Comparator {
+  val default: Comparator = Comparator(ReceivedAtSortProperty, Some(IsAscending.DESCENDING), None)
+}
+
+case class Collation(value: String) extends AnyVal
+
+case class Comparator(property: SortProperty,
+                      isAscending: Option[IsAscending],
+                      collation: Option[Collation]) {
+  def toSort: SearchQuery.Sort = new SearchQuery.Sort(property.toSortClause, isAscending.getOrElse(IsAscending.DESCENDING).toSortOrder)
+}
 
 object QueryState {
   def forIds(ids: Seq[MessageId]): QueryState = QueryState(
@@ -49,4 +77,5 @@ case class EmailQueryResponse(accountId: AccountId,
                               canCalculateChanges: Boolean,
                               ids: Seq[MessageId],
                               position: Position,
+                              sort: Option[List[Comparator]],
                               limit: Option[Limit])
