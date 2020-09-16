@@ -21,7 +21,7 @@ package org.apache.james.jmap.method
 import eu.timepit.refined.auto._
 import javax.inject.Inject
 import org.apache.james.jmap.json.{EmailQuerySerializer, ResponseSerializer}
-import org.apache.james.jmap.mail.{Comparator, EmailQueryRequest, EmailQueryResponse, Limit, Position, QueryState}
+import org.apache.james.jmap.mail.{Comparator, EmailQueryRequest, EmailQueryResponse, IsCalculateChanges, Limit, Position, QueryState}
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.DefaultCapabilities.{CORE_CAPABILITY, MAIL_CAPABILITY}
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodName}
@@ -63,7 +63,7 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
       .collectSeq()
       .map(ids => EmailQueryResponse(accountId = request.accountId,
         queryState = QueryState.forIds(ids),
-        canCalculateChanges = false,
+        canCalculateChanges = IsCalculateChanges.CANT,
         ids = ids,
         position = Position.zero,
         sort = Some(comparators),

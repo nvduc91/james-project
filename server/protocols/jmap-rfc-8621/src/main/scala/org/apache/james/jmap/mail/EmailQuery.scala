@@ -72,9 +72,15 @@ object QueryState {
       .toString)
 }
 
+object IsCalculateChanges {
+  val CANT: IsCalculateChanges = IsCalculateChanges(false)
+}
+
+case class IsCalculateChanges(value: Boolean) extends AnyVal
+
 case class EmailQueryResponse(accountId: AccountId,
                               queryState: QueryState,
-                              canCalculateChanges: Boolean,
+                              canCalculateChanges: IsCalculateChanges,
                               ids: Seq[MessageId],
                               position: Position,
                               sort: Option[List[Comparator]],

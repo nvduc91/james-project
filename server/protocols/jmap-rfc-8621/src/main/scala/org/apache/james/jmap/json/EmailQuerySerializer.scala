@@ -20,7 +20,7 @@
 package org.apache.james.jmap.json
 
 import javax.inject.Inject
-import org.apache.james.jmap.mail.{Collation, Comparator, EmailQueryRequest, EmailQueryResponse, FilterCondition, IsAscending, Limit, Position, QueryState, ReceivedAtSortProperty, SortProperty}
+import org.apache.james.jmap.mail.{FilterCondition, IsCalculateChanges, Collation, Comparator, EmailQueryRequest, EmailQueryResponse, IsAscending, Limit, Position, QueryState, ReceivedAtSortProperty, SortProperty}
 import org.apache.james.jmap.model.AccountId
 import org.apache.james.mailbox.model.{MailboxId, MessageId}
 import play.api.libs.json._
@@ -38,7 +38,8 @@ class EmailQuerySerializer @Inject()(mailboxIdFactory: MailboxId.Factory) {
   }
 
   private implicit val filterConditionReads: Reads[FilterCondition] = Json.reads[FilterCondition]
-  private implicit val emailQueryRequestReads: Reads[EmailQueryRequest] = Json.reads[EmailQueryRequest]
+  private implicit val CanCalculateChangesFormat: Format[IsCalculateChanges] = Json.valueFormat[IsCalculateChanges]
+
   private implicit val queryStateWrites: Writes[QueryState] = Json.valueWrites[QueryState]
   private implicit val positionFormat: Format[Position] = Json.valueFormat[Position]
   private implicit val limitFormat: Format[Limit] = Json.valueFormat[Limit]
