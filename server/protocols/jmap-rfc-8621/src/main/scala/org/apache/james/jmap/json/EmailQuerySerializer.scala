@@ -20,7 +20,7 @@
 package org.apache.james.jmap.json
 
 import javax.inject.Inject
-import org.apache.james.jmap.mail.{IsCalculateChanges, Collation, Comparator, EmailQueryRequest, EmailQueryResponse, IsAscending, Limit, Position, QueryState, ReceivedAtSortProperty, SortProperty}
+import org.apache.james.jmap.mail.{Collation, Comparator, EmailQueryRequest, EmailQueryResponse, IsAscending, IsCalculateChanges, Limit, Position, QueryState, ReceivedAtSortProperty, SentAtSortProperty, SortProperty}
 import org.apache.james.jmap.model.AccountId
 import org.apache.james.mailbox.model.{MailboxId, MessageId}
 import play.api.libs.json._
@@ -46,7 +46,8 @@ class EmailQuerySerializer @Inject()(mailboxIdFactory: MailboxId.Factory) {
 
   private implicit val sortPropertyReads: Reads[SortProperty] = {
     case JsString("receivedAt") => JsSuccess(ReceivedAtSortProperty)
-    case JsString(others) => JsError(s"$others is not a supported sort property")
+    case JsString("sentAt") => JsSuccess(SentAtSortProperty)
+    case JsString(others) => JsError(s"'$others' is not a supported sort property")
     case _ => JsError(s"Expecting a JsString to represent a sort property")
   }
   private implicit val sortPropertyWrites: Writes[SortProperty] = {

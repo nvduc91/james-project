@@ -42,13 +42,15 @@ sealed trait SortProperty {
 case object ReceivedAtSortProperty extends SortProperty {
   override def toSortClause: SortClause = SortClause.Arrival
 }
+case object SentAtSortProperty extends SortProperty {
+  override def toSortClause: SortClause = SortClause.SentDate
+}
 
 object IsAscending {
   val DESCENDING: IsAscending = IsAscending(false)
 }
 case class IsAscending(sortByASC: Boolean) extends AnyVal {
   def toSortOrder: SearchQuery.Sort.Order = if (sortByASC) SearchQuery.Sort.Order.NATURAL else SearchQuery.Sort.Order.REVERSE
-
 }
 
 object Comparator {
