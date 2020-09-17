@@ -118,12 +118,12 @@ trait EmailQueryMethodContract {
            |            "Email/query",
            |            {
            |                "accountId": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6",
-           |                "queryState": "${generateQueryState(messageId2, messageId1)}",
+           |                "queryState": "${generateQueryState(messageId1, messageId2)}",
            |                "canCalculateChanges": false,
            |                "position": 0,
            |                "limit": 256,
-           |                "ids": ["${messageId2.serialize()}", "${messageId1.serialize()}"],
-           |                "sort":[{"property":"receivedAt","isAscending":false}]
+           |                "ids": ["${messageId1.serialize()}", "${messageId2.serialize()}"],
+           |                "sort":[{"property":"receivedAt","isAscending":true}]
            |            },
            |            "c1"
            |        ]]
@@ -186,7 +186,7 @@ trait EmailQueryMethodContract {
            |                "position": 0,
            |                "limit": 256,
            |                "ids": ["${messageId1.serialize()}"],
-           |                "sort":[{"property":"receivedAt","isAscending":false}]
+           |                "sort":[{"property":"receivedAt","isAscending":true}]
            |            },
            |            "c1"
            |        ]]
@@ -248,7 +248,7 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
-      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+      .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
     }
   }
 
@@ -302,7 +302,7 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
-      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+      .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
     }
   }
 
@@ -619,7 +619,7 @@ trait EmailQueryMethodContract {
 
       assertThatJson(response)
         .inPath("$.methodResponses[0][1].ids")
-        .isEqualTo(s"""["${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+        .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}"]""")
     }
   }
 

@@ -47,10 +47,10 @@ case object ReceivedAtSortProperty extends SortProperty {
 
 object IsAscending {
   val DESCENDING: IsAscending = IsAscending(false)
+  val ASCENDING: IsAscending = IsAscending(true)
 }
 case class IsAscending(sortByASC: Boolean) extends AnyVal {
   def toSortOrder: SearchQuery.Sort.Order = if (sortByASC) SearchQuery.Sort.Order.NATURAL else SearchQuery.Sort.Order.REVERSE
-
 }
 
 object Comparator {
@@ -62,7 +62,7 @@ case class Collation(value: String) extends AnyVal
 case class Comparator(property: SortProperty,
                       isAscending: Option[IsAscending],
                       collation: Option[Collation]) {
-  def toSort: SearchQuery.Sort = new SearchQuery.Sort(property.toSortClause, isAscending.getOrElse(IsAscending.DESCENDING).toSortOrder)
+  def toSort: SearchQuery.Sort = new SearchQuery.Sort(property.toSortClause, isAscending.getOrElse(IsAscending.ASCENDING).toSortOrder)
 }
 
 object QueryState {
