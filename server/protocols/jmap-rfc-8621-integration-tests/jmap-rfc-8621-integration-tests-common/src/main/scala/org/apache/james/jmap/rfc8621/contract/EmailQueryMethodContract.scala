@@ -533,7 +533,9 @@ trait EmailQueryMethodContract {
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.from(message))
       .getMessageId
-
+    server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, otherMailboxPath, AppendCommand.from(message))
+      .getMessageId
     val request =
       s"""{
          |  "using": [
@@ -619,7 +621,7 @@ trait EmailQueryMethodContract {
 
       assertThatJson(response)
         .inPath("$.methodResponses[0][1].ids")
-        .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}"]""")
+        .isEqualTo(s"""["${messageId2.serialize()}", "${messageId1.serialize()}"]""")
     }
   }
 
@@ -635,6 +637,9 @@ trait EmailQueryMethodContract {
     val otherMailboxId = server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.from(message))
+      .getMessageId
+    server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, otherMailboxPath, AppendCommand.from(message))
       .getMessageId
 
     val request =
@@ -675,9 +680,21 @@ trait EmailQueryMethodContract {
 
   @Test
   def listMailsInAFirstMailboxAndNotInTheSameMailboxShouldReturnEmptyResult(server: GuiceJamesServer): Unit = {
+    val message: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
+
     val inbox = server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+    server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.from(message))
+      .getMessageId
+    server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, otherMailboxPath, AppendCommand.from(message))
+      .getMessageId
 
     val request =
       s"""{
@@ -720,6 +737,4 @@ trait EmailQueryMethodContract {
       .hashUnencodedChars(messages.toList.map(_.serialize()).mkString(" "))
       .toString
   }
-
-  private def getFutureDate: Date = Date.from(Instant.now().plus(Seconds.of(3)))
 }
