@@ -32,7 +32,7 @@ import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.apache.http.HttpStatus.SC_OK
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.http.UserCredential
-import org.apache.james.jmap.rfc8621.contract.Fixture.{ACCEPT_RFC8621_VERSION_HEADER, ANDRE, ANDRE_PASSWORD, BOB, BOB_PASSWORD, DOMAIN, authScheme, baseRequestSpecBuilder}
+import org.apache.james.jmap.rfc8621.contract.Fixture._
 import org.apache.james.mailbox.MessageManager.AppendCommand
 import org.apache.james.mailbox.model.{MailboxPath, MessageId}
 import org.apache.james.mime4j.dom.Message
@@ -118,12 +118,11 @@ trait EmailQueryMethodContract {
            |            "Email/query",
            |            {
            |                "accountId": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6",
-           |                "queryState": "${generateQueryState(messageId1, messageId2)}",
+           |                "queryState": "${generateQueryState(messageId2, messageId1)}",
            |                "canCalculateChanges": false,
            |                "position": 0,
            |                "limit": 256,
-           |                "ids": ["${messageId1.serialize()}", "${messageId2.serialize()}"],
-           |                "sort":[{"property":"receivedAt","isAscending":true}]
+           |                "ids": ["${messageId2.serialize()}", "${messageId1.serialize()}"]
            |            },
            |            "c1"
            |        ]]
@@ -185,8 +184,7 @@ trait EmailQueryMethodContract {
            |                "canCalculateChanges": false,
            |                "position": 0,
            |                "limit": 256,
-           |                "ids": ["${messageId1.serialize()}"],
-           |                "sort":[{"property":"receivedAt","isAscending":true}]
+           |                "ids": ["${messageId1.serialize()}"]
            |            },
            |            "c1"
            |        ]]
@@ -248,7 +246,7 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
-      .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
+      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
     }
   }
 
@@ -262,14 +260,17 @@ trait EmailQueryMethodContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+    val requestDateMessage1: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId1 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
       .getMessageId
+    val requestDateMessage2: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
       .getMessageId
+    val requestDateMessage3: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
       .getMessageId
     val request =
       s"""{
@@ -316,14 +317,17 @@ trait EmailQueryMethodContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+    val requestDateMessage1: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId1 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
       .getMessageId
+    val requestDateMessage2: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
       .getMessageId
+    val requestDateMessage3: Date = Date.from(Instant.now().plus(Seconds.of(3)))
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
-      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(getFutureDate).build(message))
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB), AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
       .getMessageId
     val request =
       s"""{

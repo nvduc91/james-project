@@ -83,5 +83,4 @@ case class EmailQueryResponse(accountId: AccountId,
                               canCalculateChanges: IsCalculateChanges,
                               ids: Seq[MessageId],
                               position: Position,
-                              sort: Option[List[Comparator]],
                               limit: Option[Limit])

@@ -66,7 +66,6 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
         canCalculateChanges = IsCalculateChanges.CANT,
         ids = ids,
         position = Position.zero,
-        sort = Some(comparators),
         limit = Some(Limit.default)))
       .map(response => Invocation(methodName = methodName, arguments = Arguments(serializer.serialize(response)), methodCallId = invocation.methodCallId))
   }
