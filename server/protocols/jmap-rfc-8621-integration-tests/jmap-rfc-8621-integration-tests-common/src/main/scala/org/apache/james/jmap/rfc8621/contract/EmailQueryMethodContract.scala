@@ -446,9 +446,9 @@ trait EmailQueryMethodContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
     val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
     val messageId1: MessageId = sendMessageToBobInbox(server, message, requestDateMessage1)
-    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(1).toInstant)
+    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(2).toInstant)
     val messageId2 = sendMessageToBobInbox(server, message, requestDateMessage2)
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(2).toInstant)
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
     val messageId3 = sendMessageToBobInbox(server, message, requestDateMessage3)
 
     val request =
@@ -479,34 +479,43 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
-      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+      .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
     }
   }
 
   @Test
   def listMailsShouldBeSortedByDescendingOrderOfSentAt(server: GuiceJamesServer): Unit = {
+    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
+    val otherMailboxPath = MailboxPath.forUser(BOB, "other")
+    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
     val message: Message = Message.Builder
       .of
       .setSubject("test")
       .setBody("testmail", StandardCharsets.UTF_8)
       .build
-    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
-    val otherMailboxPath = MailboxPath.forUser(BOB, "other")
-    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
-    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+
+    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
+        AppendCommand.builder()
+          .withInternalDate(requestDateMessage1)
+          .build(message))
       .getMessageId
-    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(1).toInstant)
+
+    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(2).toInstant)
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
+        AppendCommand.builder()
+          .withInternalDate(requestDateMessage2)
+          .build(message))
       .getMessageId
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(2).toInstant)
+
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
+        AppendCommand.builder()
+          .withInternalDate(requestDateMessage3)
+          .build(message))
       .getMessageId
 
     val request =
@@ -547,28 +556,44 @@ trait EmailQueryMethodContract {
 
   @Test
   def listMailsShouldBeSortedByAscendingOrderOfSentAt(server: GuiceJamesServer): Unit = {
-    val message: Message = Message.Builder
-      .of
-      .setSubject("test")
-      .setBody("testmail", StandardCharsets.UTF_8)
-      .build
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+
     val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val message1: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage1)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
+        AppendCommand.builder().build(message1))
       .getMessageId
-    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(1).toInstant)
+
+    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(2).toInstant)
+    val message2: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage2)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
+        AppendCommand.builder().build(message2))
       .getMessageId
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(2).toInstant)
+
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
+    val message3: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage3)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
+        AppendCommand.builder().build(message3))
       .getMessageId
 
     val request =
@@ -603,34 +628,127 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
+      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+    }
+  }
+
+  @Test
+  def listMailsShouldBeSortedByAscendingOrderWhenSortingBySentAtWithoutOrdering(server: GuiceJamesServer): Unit = {
+    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
+    val otherMailboxPath = MailboxPath.forUser(BOB, "other")
+    server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+
+    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
+    val message1: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage1)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
+    val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
+        AppendCommand.builder().build(message1))
+      .getMessageId
+
+    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(2).toInstant)
+    val message2: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage2)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
+    val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
+        AppendCommand.builder().build(message2))
+      .getMessageId
+
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val message3: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage3)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
+    val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
+      .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
+        AppendCommand.builder().build(message3))
+      .getMessageId
+
+    val request =
+      s"""{
+         |  "using": [
+         |    "urn:ietf:params:jmap:core",
+         |    "urn:ietf:params:jmap:mail"],
+         |  "methodCalls": [[
+         |    "Email/query",
+         |    {
+         |      "accountId": "29883977c13473ae7cb7678ef767cbfbaffc8a44a6e463d971d23a65c1dc4af6",
+         |      "comparator": [{
+         |        "property":"sentAt"
+         |      }]
+         |    },
+         |    "c1"]]
+         |}""".stripMargin
+
+    awaitAtMostTenSeconds.untilAsserted { () =>
+      val response = `given`
+        .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
+        .body(request)
+      .when
+        .post
+      .`then`
+        .statusCode(SC_OK)
+        .contentType(JSON)
+        .extract
+        .body
+        .asString
+
+    assertThatJson(response)
+      .inPath("$.methodResponses[0][1].ids")
       .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
     }
   }
 
   @Test
-  def listMailsShouldBeSortedByAscendingOrderOfSentAtByDefault(server: GuiceJamesServer): Unit = {
-    val message: Message = Message.Builder
-      .of
-      .setSubject("test")
-      .setBody("testmail", StandardCharsets.UTF_8)
-      .build
+  def listMailsShouldBeSortedByAscendingOrderOfInternalDateByDefaultWhenNoDateInHeader(server: GuiceJamesServer): Unit = {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(MailboxPath.inbox(BOB))
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
+
     val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val message1: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage1)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
+        AppendCommand.builder().build(message1))
       .getMessageId
-    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(1).toInstant)
+
+    val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val message2: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage2)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
+        AppendCommand.builder().build(message2))
       .getMessageId
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).plusHours(2).toInstant)
+
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val message3: Message = Message.Builder
+      .of
+      .setSubject("test")
+      .setDate(requestDateMessage3)
+      .setBody("testmail", StandardCharsets.UTF_8)
+      .build
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
+        AppendCommand.builder().build(message3))
       .getMessageId
 
     val request =
