@@ -76,7 +76,7 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
       .sorts(comparators.map(_.toSort).asJava)
       .build()
 
-     MailboxFilter.buildQuery(request, sortedSearchQuery)
+    MailboxFilter.buildQuery(request, sortedSearchQuery)
   }
 
   private def asEmailQueryRequest(arguments: Arguments): SMono[EmailQueryRequest] =
