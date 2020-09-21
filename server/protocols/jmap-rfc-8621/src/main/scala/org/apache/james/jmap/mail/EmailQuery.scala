@@ -98,6 +98,10 @@ case object HasKeywordSortProperty extends SortProperty {
   override def toSortClause: Either[UnsupportedSortException, SortClause] = Left(UnsupportedSortException("hasKeyword"))
 }
 
+case object SentAtSortProperty extends SortProperty {
+  override def toSortClause: SortClause = SortClause.SentDate
+}
+
 object IsAscending {
   val DESCENDING: IsAscending = IsAscending(false)
   val ASCENDING: IsAscending = IsAscending(true)
