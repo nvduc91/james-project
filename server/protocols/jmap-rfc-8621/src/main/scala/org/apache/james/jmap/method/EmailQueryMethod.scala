@@ -18,23 +18,16 @@
  ****************************************************************/
 package org.apache.james.jmap.method
 
-import java.util.Date
-
 import eu.timepit.refined.auto._
 import javax.inject.Inject
 import org.apache.james.jmap.json.{EmailQuerySerializer, ResponseSerializer}
-import org.apache.james.jmap.mail.{EmailQueryRequest, EmailQueryResponse}
 import org.apache.james.jmap.mail.{CanCalculateChanges, Comparator, EmailQueryRequest, EmailQueryResponse, Limit, Position, QueryState}
 import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
 import org.apache.james.jmap.model.DefaultCapabilities.{CORE_CAPABILITY, MAIL_CAPABILITY}
 import org.apache.james.jmap.model.Invocation.{Arguments, MethodName}
 import org.apache.james.jmap.model.{Capabilities, ErrorCode, Invocation}
 import org.apache.james.jmap.routes.ProcessingContext
-import org.apache.james.mailbox.exception.MailboxNotFoundException
-import org.apache.james.jmap.utils.search.MailboxFilter
 import org.apache.james.jmap.utils.search.MailboxFilter.QueryFilter
-import org.apache.james.mailbox.model.SearchQuery.{Conjunction, ConjunctionCriterion, Criterion, DateComparator, DateOperator, DateResolution, InternalDateCriterion}
-import org.apache.james.mailbox.model.SearchQuery.Sort.SortClause
 import org.apache.james.jmap.utils.search.MailboxFilter
 import org.apache.james.mailbox.exception.MailboxNotFoundException
 import org.apache.james.mailbox.model.{MultimailboxesSearchQuery, SearchQuery}
@@ -79,11 +72,11 @@ class EmailQueryMethod @Inject() (serializer: EmailQuerySerializer,
 
   private def searchQueryFromRequest(request: EmailQueryRequest): MultimailboxesSearchQuery = {
     val comparators: List[Comparator] = request.comparator.getOrElse(Set(Comparator.default)).toList
-    val sortedSearchQuery: SearchQuery = new SearchQuery.Builder()
+    val sortedSearchQuery: SearchQuery = QueryFilter.buildQuery(request)
       .sorts(comparators.map(_.toSort).asJava)
       .build()
 
-    MailboxFilter.buildQuery(request, sortedSearchQuery)
+     MailboxFilter.buildQuery(request, sortedSearchQuery)
   }
 
   private def asEmailQueryRequest(arguments: Arguments): SMono[EmailQueryRequest] =
