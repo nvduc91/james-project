@@ -494,7 +494,7 @@ trait EmailQueryMethodContract {
       .setBody("testmail", StandardCharsets.UTF_8)
       .build
 
-    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
+    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
         AppendCommand.builder()
@@ -510,7 +510,7 @@ trait EmailQueryMethodContract {
           .build(message))
       .getMessageId
 
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(3).toInstant)
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
         AppendCommand.builder()
@@ -550,7 +550,7 @@ trait EmailQueryMethodContract {
 
     assertThatJson(response)
       .inPath("$.methodResponses[0][1].ids")
-      .isEqualTo(s"""["${messageId3.serialize()}", "${messageId2.serialize()}", "${messageId1.serialize()}"]""")
+      .isEqualTo(s"""["${messageId1.serialize()}", "${messageId2.serialize()}", "${messageId3.serialize()}"]""")
     }
   }
 
@@ -715,40 +715,27 @@ trait EmailQueryMethodContract {
     val otherMailboxPath = MailboxPath.forUser(BOB, "other")
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(otherMailboxPath)
 
-    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
-    val message1: Message = Message.Builder
+    val requestDateMessage1 = Date.from(ZonedDateTime.now().minusDays(2).toInstant)
+    val message: Message = Message.Builder
       .of
       .setSubject("test")
-      .setDate(requestDateMessage1)
       .setBody("testmail", StandardCharsets.UTF_8)
       .build
     val messageId1: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().build(message1))
+        AppendCommand.builder().withInternalDate(requestDateMessage1).build(message))
       .getMessageId
 
     val requestDateMessage2 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
-    val message2: Message = Message.Builder
-      .of
-      .setSubject("test")
-      .setDate(requestDateMessage2)
-      .setBody("testmail", StandardCharsets.UTF_8)
-      .build
     val messageId2 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().build(message2))
+        AppendCommand.builder().withInternalDate(requestDateMessage2).build(message))
       .getMessageId
 
-    val requestDateMessage3 = Date.from(ZonedDateTime.now().minusDays(1).toInstant)
-    val message3: Message = Message.Builder
-      .of
-      .setSubject("test")
-      .setDate(requestDateMessage3)
-      .setBody("testmail", StandardCharsets.UTF_8)
-      .build
+    val requestDateMessage3 = Date.from(ZonedDateTime.now().toInstant)
     val messageId3 = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, MailboxPath.inbox(BOB),
-        AppendCommand.builder().build(message3))
+        AppendCommand.builder().withInternalDate(requestDateMessage3).build(message))
       .getMessageId
 
     val request =
