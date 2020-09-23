@@ -20,7 +20,6 @@ package org.apache.james.mailbox.store.search.comparator;
 
 import static org.apache.james.mime4j.codec.DecodeMonitor.SILENT;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
@@ -30,10 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.james.mailbox.store.mail.model.MailboxMessage;
-import org.apache.james.mime4j.codec.DecodeMonitor;
 import org.apache.james.mime4j.field.DateTimeFieldLenientImpl;
-import org.apache.james.mime4j.message.DefaultMessageBuilder;
-import org.apache.james.mime4j.stream.MimeConfig;
 import org.apache.james.mime4j.stream.RawField;
 import org.apache.james.util.date.ImapDateTimeFormatter;
 import org.slf4j.Logger;

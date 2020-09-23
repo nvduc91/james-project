@@ -1645,7 +1645,7 @@ trait EmailQueryMethodContract {
         .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
         .body(request)
       .when
-        .post.prettyPeek()
+        .post
       .`then`
         .statusCode(SC_OK)
         .contentType(JSON)
@@ -1694,7 +1694,7 @@ trait EmailQueryMethodContract {
         .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
         .body(request)
       .when
-        .post.prettyPeek()
+        .post
       .`then`
         .statusCode(SC_OK)
         .contentType(JSON)
