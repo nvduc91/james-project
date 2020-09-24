@@ -363,7 +363,7 @@ An **EmailBodyPart** object has the following properties:
 In addition, the client may request/send EmailBodyPart properties representing individual header fields, following the same syntax and semantics as for the Email object, e.g., `header:Content-Type`.
 
 <aside class="warning">
- We support it for Email, but not yet for EmailBodyPart
+ We support fetching specific headers for the Email entity, but this is not yet implemented for the EmailBodyPart entity
 </aside>
 
 The following **Email** properties are specified for access to the body data of the message:
@@ -562,7 +562,7 @@ This is a standard "/get" method as described in [@!RFC8620], Section 5.1, with 
     The server MUST ensure the truncation results in valid UTF-8 and does not occur mid-codepoint. If the part is of type `text/html`, the server SHOULD NOT truncate inside an HTML tag, e.g., in the middle of `<a href="https://example.com">`. There is no requirement for the truncated form to be a balanced tree or valid HTML (indeed, the original source may well be neither of these things).
 
 <aside class="warning">
-  Body truncation implementation do not take html structure into account.
+  Body truncation implementation does not take html structure into account.
   Truncation can happen in the middle of an html tag.
 </aside>
 
