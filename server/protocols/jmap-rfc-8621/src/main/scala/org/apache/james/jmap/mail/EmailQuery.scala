@@ -99,7 +99,7 @@ case object HasKeywordSortProperty extends SortProperty {
 }
 
 case object SentAtSortProperty extends SortProperty {
-  override def toSortClause: SortClause = SortClause.SentDate
+  override def toSortClause: Either[UnsupportedSortException, SortClause] = scala.Right(SortClause.SentDate)
 }
 
 object IsAscending {
