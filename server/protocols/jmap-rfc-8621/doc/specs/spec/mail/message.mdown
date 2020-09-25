@@ -672,6 +672,8 @@ This is a standard "/changes" method as described in [@!RFC8620], Section 5.2. I
 
 <aside class="warning">
     Partially implemented
+    
+    The calcultateTotal field is not supported and so nor are the negative position.
 </aside>
 
 This is a standard "/query" method as described in [@!RFC8620], Section 5.5, but with the following additional request arguments:
@@ -733,7 +735,7 @@ A **FilterCondition** object has the following properties, any of which may be o
 If zero properties are specified on the FilterCondition, the condition MUST always evaluate to `true`. If multiple properties are specified, ALL must apply for the condition to be `true` (it is equivalent to splitting the object into one-property conditions and making them all the child of an AND filter operator).
 
 <aside class="warning">
-Those properties are not supported yet for filtering:
+These properties are not supported yet for filtering:
 - allInThreadHaveKeyword
 - someInThreadHaveKeyword
 - noneInThreadHaveKeyword
@@ -779,7 +781,7 @@ The following values for the *property* field on the Comparator object SHOULD be
 - **someInThreadHaveKeyword** - This value MUST be considered `true` for the Email if **any** of the Emails in the same Thread have the keyword given as an additional *keyword* property on the *Comparator* object.
 
 <aside class="warning">
- Those properties are not supported yet for sorting:
+ These properties are not supported yet for sorting:
  - size
  - from
  - to
