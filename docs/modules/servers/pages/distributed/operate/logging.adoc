@@ -14,7 +14,7 @@ Cassandra timeouts). In such case we advise you to conduct a close
 review of performances at the tier level.
 
 Leveraging filters in Kibana discover view can help filtering out
-``already known'' frequently occurring logs.
+''already known'' frequently occurring logs.
 
 When reporting ERROR or WARNING logs, consider adding the full logs, and
 related data (eg the raw content of a mail triggering an issue) to the
@@ -22,88 +22,69 @@ bug report in order to ease resolution.
 
 == Logging configuration
 
-Distributed James uses link:http://logback.qos.ch/[logback] as a logging library.
+Distributed James uses link:http://logback.qos.ch/[logback] as a logging library
+and link:https://docs.fluentbit.io/[FluentBit] as centralize logging.
 
 Information about logback configuration can be found
 link:http://logback.qos.ch/manual/configuration.html[here].
 
 == Structured logging
 
-Distributed Server leverage the use of MDC in order to achieve structured logging,
+Distributed Server leverages the use of MDC in order to achieve structured logging,
 and better add context to the logged information. We furthermore ship
-link:https://github.com/linagora/logback-elasticsearch-appender[Logback Elasticsearch Appender]
-on the classpath to easily allow direct log indexation in
-link:https://www.elastic.co/elasticsearch[ElasticSearch].
+json log in to file with `RollingFileAppender` on the classpath to easily allow
+link:https://docs.fluentbit.io/manual/pipeline/inputs/tail[FluentBit] direct
+tail the log file.
 
 Here is a sample `conf/logback.xml` configuration file for logback with the following
 pre-requisites:
 
-* Logging both in an unstructured fashion on the console and in a structure fashion in
-ElasticSearch
-* Logging ElasticSearch Log appender logs in the console
+* Logging in a structure json fashion and write to file for centralize logging.
+* Centralize logging third party like FluentBit can tail from logging's file then filter/process and put in to ElastichSearch
 
 ....
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration scan="true" scanPeriod="30 seconds">
+<configuration>
 
         <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
                 <resetJUL>true</resetJUL>
         </contextListener>
 
-        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-                <encoder>
-                        <pattern>%d{yyyy.MM.dd HH:mm:ss.SSS} %highlight([%-5level]) %logger{15} - %msg%n%rEx</pattern>
-                        <immediateFlush>false</immediateFlush>
+        <appender name="LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                        <fileNamePattern>logs/james.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                        <maxHistory>1</maxHistory>
+                        <totalSizeCap>200MB</totalSizeCap>
+                        <maxFileSize>100MB</maxFileSize>
+                </rollingPolicy>
+
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+                        <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
+                        <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
+
+                        <!-- Importance for handling multiple lines log -->
+                        <appendLineSeparator>true</appendLineSeparator>
+
+                        <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                            <prettyPrint>false</prettyPrint>
+                        </jsonFormatter>
+                    </layout>
                 </encoder>
         </appender>
 
-        <appender name="ELASTIC" class="com.linagora.logback.elasticsearch.ElasticsearchAppender">
-            <url>http://elasticsearch:9200/_bulk</url>
-            <index>logs-james-%date{yyyy.MM.dd}</index>
-            <type>tester</type>
-            <includeMdc>true</includeMdc>
-            <excludedMdcKeys>host</excludedMdcKeys>
-            <errorLoggerName>es-error-logger</errorLoggerName>
-            <properties>
-                <property>
-                    <name>host</name>
-                    <value>${HOSTNAME}</value>
-                    <allowEmpty>false</allowEmpty>
-                </property>
-                <property>
-                    <name>severity</name>
-                    <value>%level</value>
-                </property>
-                <property>
-                    <name>thread</name>
-                    <value>%thread</value>
-                </property>
-                <property>
-                    <name>stacktrace</name>
-                    <value>%ex</value>
-                </property>
-                <property>
-                    <name>logger</name>
-                    <value>%logger</value>
-                </property>
-            </properties>
-            <headers>
-                <header>
-                    <name>Content-Type</name>
-                    <value>application/json</value>
-                </header>
-            </headers>
-        </appender>
-
-        <root level="WARN">
-                <appender-ref ref="ELASTIC" />
+        <root level="INFO"><appender-ref ref="LOG_FILE" />
         </root>
 
-        <logger name="es-error-logger" level="DEBUG" additivity="false">
-            <appender-ref ref="CONSOLE" />
-        </logger>
+        <root level="DEBUG"><appender-ref ref="LOG_FILE" />
+        </root>
+
+        <root level="WARN">
+                <appender-ref ref="LOG_FILE" />
+        </root>
 
         <logger name="org.apache.james" level="INFO" />
+        <logger name="com.datastax.driver.core.QueryLogger.SLOW" level="DEBUG" />
 
 </configuration>
 ....
