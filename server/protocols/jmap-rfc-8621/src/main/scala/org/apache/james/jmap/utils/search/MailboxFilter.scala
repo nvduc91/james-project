@@ -230,12 +230,14 @@ object MailboxFilter {
     override def toQuery(filterCondition: FilterCondition): Either[UnsupportedFilterException, List[Criterion]] =
       filterCondition.text match {
         case Some(text) =>
-          Right(List(SearchQuery.headerContains("From", text.value),
-            SearchQuery.headerContains("To", text.value),
-            SearchQuery.headerContains("Cc", text.value),
-            SearchQuery.headerContains("Bcc", text.value),
-            SearchQuery.headerContains("Subject", text.value),
-            SearchQuery.bodyContains(text.value)))
+          Right(List(SearchQuery.or(
+            List(SearchQuery.headerContains("From", text.value),
+              SearchQuery.headerContains("To", text.value),
+              SearchQuery.headerContains("Cc", text.value),
+              SearchQuery.headerContains("Bcc", text.value),
+              SearchQuery.headerContains("Subject", text.value),
+              SearchQuery.bodyContains(text.value))
+            .asJava)))
         case None => Right(Nil)
       }
   }
@@ -287,10 +289,12 @@ object MailboxFilter {
   case object Body extends ConditionFilter {
     override def toQuery(filterCondition: FilterCondition): Either[UnsupportedFilterException, List[Criterion]] =
       filterCondition.body match {
-        case Some(text) => Right(List(
-          SearchQuery.attachmentContains(text.value),
-          SearchQuery.bodyContains(text.value),
-          SearchQuery.attachmentFileName(text.value)))
+        case Some(text) => Right(List(SearchQuery.or(
+          List(
+            SearchQuery.attachmentContains(text.value),
+            SearchQuery.bodyContains(text.value),
+            SearchQuery.attachmentFileName(text.value))
+          .asJava)))
         case None => Right(Nil)
       }
   }
