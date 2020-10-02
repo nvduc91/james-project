@@ -40,7 +40,7 @@ link:https://www.elastic.co/elasticsearch[ElasticSearch].
 Here is a sample `conf/logback.xml` configuration file for logback with the following
 pre-requisites:
 
-* Logging both in an unstructured fashion on the console and in a structure fashion in ElasticSearch
+* Logging both in an unstructured fashion on the console and in a structured fashion in ElasticSearch
 * Logging ElasticSearch Log appender logs in the console
 
 Configuration for pushing log direct to ElasticSearch
@@ -113,12 +113,12 @@ Configuration for pushing log direct to ElasticSearch
 </configuration>
 ....
 
-=== Using fluentBit as a log forwarder
+=== Using FluentBit as a log forwarder
 
-Distributed Server leverages the use of MDC in order to achieve structured logging, and better add context to the logged information. We furthermore ship json log in to file with RollingFileAppender on the classpath to easily allow FluentBit direct tail the log file.
+Distributed Server leverages the use of MDC in order to achieve structured logging, and better add context to the logged information. We furthermore ship json logs to file with RollingFileAppender on the classpath to easily allow FluentBit to directly tail the log file.
 Here is a sample conf/logback.xml configuration file for logback with the following pre-requisites:
 
-Logging in a structure json fashion and write to file for centralize logging.
+Logging in a structured json fashion and write to file for centralizing logging.
 Centralize logging third party like FluentBit can tail from logging’s file then filter/process and put in to ElastichSearch
 
 ....
@@ -168,8 +168,7 @@ Centralize logging third party like FluentBit can tail from logging’s file the
 </configuration>
 ....
 
-First you need to create a logs folder to mount the `logs` folder of James outside container,
-then mount that folder to FluentBit. In case you need to use `sh command` in fluent-bit container please use image: `fluent/fluent-bit:1.5.7-debug`
+First you need to create a `logs` folder, then mount it to James container and to FluentBit.
 
 docker-compose:
 ....
@@ -251,7 +250,7 @@ services:
 ....
 
 FluentBit config as:
-the `Host elasticsearch` it point to `elasticsearch` service in docker-compose file.
+the `Host elasticsearch` pointing to `elasticsearch` service in docker-compose file.
 ....
 [SERVICE]
     Parsers_File    /fluent-bit/etc/parsers.conf
@@ -282,7 +281,7 @@ the `Host elasticsearch` it point to `elasticsearch` service in docker-compose f
     Type docker
 ....
 
-FulentBit Parser config:
+FluentBit Parser config:
 ....
 [PARSER]
   Name         docker
