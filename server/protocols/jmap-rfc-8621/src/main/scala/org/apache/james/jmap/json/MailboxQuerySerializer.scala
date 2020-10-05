@@ -40,7 +40,12 @@ object MailboxQuerySerializer {
       .getOrElse(JsError(s"$value is not a valid role"))
     case _ => JsError("Expecting a JsString to be representing a role")
   }
-  private implicit val filterReads: Reads[MailboxFilter] = Json.reads[MailboxFilter]
+
+  private implicit val filterReads: Reads[MailboxFilter] =  {
+    case JsObject(underlying) if underlying.keySet.diff(MailboxFilter.SUPPORTED).nonEmpty => JsError(s"Unsupported filter")
+    case jsValue: JsValue => Json.reads[MailboxFilter].reads(jsValue)
+  }
+
   private implicit val emailQueryRequestReads: Reads[MailboxQueryRequest] = Json.reads[MailboxQueryRequest]
   private implicit val queryStateWrites: Writes[QueryState] = Json.valueWrites[QueryState]
 

@@ -81,7 +81,11 @@ class EmailQuerySerializer @Inject()(mailboxIdFactory: MailboxId.Factory) {
     case _ => JsError(s"Expecting a JsString to represent a known operator")
   }
 
-  private implicit val filterConditionReads: Reads[FilterCondition] = Json.reads[FilterCondition]
+  private implicit val filterConditionReads: Reads[FilterCondition] = {
+    case JsObject(underlying) if underlying.keySet.diff(FilterCondition.SUPPORTED).nonEmpty => JsError(s"Unsupported filter")
+    case jsValue => Json.reads[FilterCondition].reads(jsValue)
+  }
+
   private implicit val limitUnparsedReads: Reads[LimitUnparsed] = Json.valueReads[LimitUnparsed]
   private implicit val CanCalculateChangesFormat: Format[CanCalculateChanges] = Json.valueFormat[CanCalculateChanges]
 
