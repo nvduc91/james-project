@@ -5432,8 +5432,10 @@ trait EmailQueryMethodContract {
         .inPath("methodResponses[0][1]")
         .isEqualTo(
         """{
-         |     "type":"invalidArguments","description":"{\"errors\":[{\"path\":\"obj.filter\",\"messages\":[\"Unsupported filter\"]}]}"}
-        """.stripMargin)
+          |  "type": "invalidArguments",
+          |  "description": "{\"errors\":[{\"path\":\"obj.filter\",\"messages\":[\"These '[unsupported_option, role]' was unsupported filter options\"]}]}"
+          |}
+          |""".stripMargin)
   }
 
   @Test

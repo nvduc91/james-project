@@ -42,7 +42,14 @@ object MailboxQuerySerializer {
   }
 
   private implicit val filterReads: Reads[MailboxFilter] =  {
-    case JsObject(underlying) if underlying.keySet.diff(MailboxFilter.SUPPORTED).nonEmpty => JsError(s"Unsupported filter")
+    case JsObject(underlying) => {
+      val unsupported: collection.Set[String] = underlying.keySet.diff(MailboxFilter.SUPPORTED)
+      if (unsupported.nonEmpty) {
+        JsError(s"These '${unsupported.reduce((option, other) => String.format("[%s, %s]", option, other))}' was unsupported filter options")
+      } else {
+        Json.reads[MailboxFilter].reads(JsObject(underlying))
+      }
+    }
     case jsValue: JsValue => Json.reads[MailboxFilter].reads(jsValue)
   }
 
