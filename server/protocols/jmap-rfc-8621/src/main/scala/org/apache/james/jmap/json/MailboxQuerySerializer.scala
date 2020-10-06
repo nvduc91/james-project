@@ -45,7 +45,7 @@ object MailboxQuerySerializer {
     case JsObject(underlying) => {
       val unsupported: collection.Set[String] = underlying.keySet.diff(MailboxFilter.SUPPORTED)
       if (unsupported.nonEmpty) {
-        JsError(s"These '${unsupported.reduce((option, other) => String.format("[%s, %s]", option, other))}' was unsupported filter options")
+        JsError(s"These '${unsupported.mkString("[", ", ", "]")}' was unsupported filter options")
       } else {
         Json.reads[MailboxFilter].reads(JsObject(underlying))
       }

@@ -85,7 +85,7 @@ class EmailQuerySerializer @Inject()(mailboxIdFactory: MailboxId.Factory) {
     case JsObject(underlying) => {
       val unsupported: collection.Set[String] = underlying.keySet.diff(FilterCondition.SUPPORTED)
       if (unsupported.nonEmpty) {
-        JsError(s"These '${unsupported.reduce((option, other) => String.format("[%s, %s]", option, other))}' was unsupported filter options")
+        JsError(s"These '${unsupported.mkString("[", ", ", "]")}' was unsupported filter options")
       } else {
         Json.reads[FilterCondition].reads(JsObject(underlying))
       }

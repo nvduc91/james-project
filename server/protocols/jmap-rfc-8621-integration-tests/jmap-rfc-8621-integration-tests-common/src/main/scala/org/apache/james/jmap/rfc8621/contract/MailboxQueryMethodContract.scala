@@ -477,7 +477,7 @@ trait MailboxQueryMethodContract {
            |            "error",
            |            {
            |                "type": "invalidArguments",
-           |                "description": "{\"errors\":[{\"path\":\"obj.filter\",\"messages\":[\"These 'unsupported_option' was unsupported filter options\"]}]}"
+           |                "description": "{\"errors\":[{\"path\":\"obj.filter\",\"messages\":[\"These '[unsupported_option]' was unsupported filter options\"]}]}"
            |            },
            |            "c1"
            |        ]
