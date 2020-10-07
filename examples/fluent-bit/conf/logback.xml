@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+        <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+                <resetJUL>true</resetJUL>
+        </contextListener>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+                        <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
+                        <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
+
+                        <!-- Importance for handling multiple lines log -->
+                        <appendLineSeparator>true</appendLineSeparator>
+
+                        <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                            <prettyPrint>false</prettyPrint>
+                        </jsonFormatter>
+                    </layout>
+                </encoder>
+        </appender>
+
+
+        <appender name="LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                        <fileNamePattern>logs/james.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                        <maxHistory>1</maxHistory> 
+                        <totalSizeCap>200MB</totalSizeCap>
+                        <maxFileSize>100MB</maxFileSize>
+                </rollingPolicy>
+
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+                        <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
+                        <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
+
+                        <!-- Importance for handling multiple lines log -->
+                        <appendLineSeparator>true</appendLineSeparator>
+
+                        <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                            <prettyPrint>false</prettyPrint>
+                        </jsonFormatter>
+                    </layout>
+                </encoder>
+        </appender>
+
+        <root level="INFO"><appender-ref ref="CONSOLE" />
+        </root>
+
+        <root level="DEBUG"><appender-ref ref="CONSOLE" />
+        </root>
+
+        <root level="WARN">
+                <appender-ref ref="CONSOLE" />
+        </root>
+
+        <logger name="org.apache.james" level="INFO" />
+        <logger name="com.datastax.driver.core.QueryLogger.SLOW" level="DEBUG" />
+
+
+</configuration>
