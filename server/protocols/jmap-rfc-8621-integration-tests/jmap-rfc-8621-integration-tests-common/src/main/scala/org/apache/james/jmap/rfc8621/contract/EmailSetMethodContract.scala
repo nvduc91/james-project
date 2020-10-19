@@ -315,15 +315,15 @@ trait EmailSetMethodContract {
     .when
       .post
 
-    val messages: List[Flags] = server.getProbe(classOf[MessageIdProbe]).getMessages(message.getMessageId, BOB).asScala.map(m => m.getFlags).toList
+    val flags: List[Flags] = server.getProbe(classOf[MessageIdProbe]).getMessages(message.getMessageId, BOB).asScala.map(m => m.getFlags).toList
     val expectedFlags: Flags  = FlagsBuilder.builder.add("music").add(Flags.Flag.DELETED).build
 
-    assertThat(messages.asJava)
+    assertThat(flags.asJava)
       .containsExactly(expectedFlags)
   }
 
   @Test
-  def shouldNotResetKeywordWhenItDefaultLikeAnswered(server: GuiceJamesServer): Unit = {
+  def shouldResetKeywordsWhenNotDefault(server: GuiceJamesServer): Unit = {
     val message: Message = Fixture.createTestMessage
 
     val flags: Flags = new Flags(Flags.Flag.ANSWERED)
