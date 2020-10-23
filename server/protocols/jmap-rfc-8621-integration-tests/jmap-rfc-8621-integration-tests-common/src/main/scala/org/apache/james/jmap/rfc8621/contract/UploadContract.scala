@@ -128,7 +128,7 @@ trait UploadContract {
   }
 
   @Test
-  @Disabled("Disabled by JAMES-1788")
+  @Disabled("JAMES-1788 Upload size limitation needs to be contributed")
   def shouldRejectWhenUploadFileTooBig(): Unit = {
     val response: String = `given`
       .basePath("")

@@ -76,9 +76,7 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
                              val attachmentManager: AttachmentManager,
                              val serializer: UploadSerializer) extends JMAPRoutes {
 
-  class CancelledUploadException extends RuntimeException {
-
-  }
+  class CancelledUploadException extends RuntimeException
 
   private val accountIdParam: String = "accountId"
   private val uploadURI = s"/upload/{$accountIdParam}/"
@@ -119,7 +117,7 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
               .flatMap(content => handle(targetAccountId, contentType, content, session, response))
               .subscribeOn(Schedulers.elastic())
             } else {
-              SMono.raiseError(new UnauthorizedException("You cannot upload to others"))
+              SMono.raiseError(new UnauthorizedException("Attempt to upload in another account"))
             })
       }
 
