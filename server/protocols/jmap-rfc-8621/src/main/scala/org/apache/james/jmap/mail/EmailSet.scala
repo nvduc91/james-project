@@ -23,7 +23,6 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import org.apache.james.jmap.mail.EmailSet.UnparsedMessageId
 import org.apache.james.jmap.method.WithAccountId
-import org.apache.james.jmap.model.KeywordsFactory.STRICT_KEYWORDS_FACTORY
 import org.apache.james.jmap.model.State.State
 import org.apache.james.jmap.model.{AccountId, Keywords, SetError}
 import org.apache.james.mailbox.model.MessageId
