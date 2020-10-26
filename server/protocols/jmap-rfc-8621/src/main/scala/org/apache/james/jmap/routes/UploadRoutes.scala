@@ -19,13 +19,14 @@
 
 package org.apache.james.jmap.routes
 
-import java.io.InputStream
+import java.io.{InputStream, PushbackInputStream}
 import java.time.ZonedDateTime
-import java.util.stream
+import java.util
+import java.util.{Arrays, Optional, stream}
 import java.util.stream.Stream
 
 import eu.timepit.refined.api.Refined
-import io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE
+import io.netty.handler.codec.http.HttpHeaderNames.{CONTENT_TYPE, LAST_MODIFIED}
 import io.netty.handler.codec.http.HttpResponseStatus.{BAD_REQUEST, CREATED}
 import io.netty.handler.codec.http.HttpMethod
 import javax.inject.{Inject, Named}
@@ -45,10 +46,11 @@ import reactor.netty.http.server.{HttpServerRequest, HttpServerResponse}
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.NonNegative
 import eu.timepit.refined.refineV
+import org.apache.commons.io.IOUtils
 import org.apache.james.jmap.exceptions.UnauthorizedException
 import org.apache.james.jmap.json.UploadSerializer
 import org.apache.james.jmap.mail.BlobId
-import org.apache.james.jmap.model.{AccountId, Id}
+import org.apache.james.jmap.model.{AccountId, Id, JmapRfc8621Configuration}
 import org.apache.james.jmap.model.Id.Id
 
 object UploadRoutes {
@@ -60,7 +62,7 @@ object UploadRoutes {
   def sanitizeSize(value: Long): Size = {
     val size: Either[String, Size] = refineV[NonNegative](value)
     size.fold(e => {
-      LOGGER.error(s"Encountered an invalid Email size: $e")
+      LOGGER.error(s"Encountered an invalid upload files size: $e")
       Zero
     },
       refinedValue => refinedValue)
@@ -72,11 +74,58 @@ case class UploadResponse(accountId: AccountId,
                           `type`: ContentType,
                           size: Size)
 
+private object ReadAheadInputStream {
+
+  trait RequireStream {
+    def of(in: InputStream): ReadAheadInputStream.RequireLength
+  }
+
+  trait RequireLength {
+    def length(length: Int): ReadAheadInputStream
+  }
+
+  private def hasMore(stream: PushbackInputStream): Boolean = {
+    val nextByte: Int = stream.read
+    if (nextByte >= 0) {
+      stream.unread(nextByte)
+      true
+    }
+    else false
+  }
+
+  def eager: ReadAheadInputStream.RequireStream = (in: InputStream) => (length: Int) => {
+      def foo(length: Int): ReadAheadInputStream = { //+1 is to evaluate hasMore
+        val stream: PushbackInputStream = new PushbackInputStream(in, length + 1)
+        val bytes: Array[Byte] = new Array[Byte](length)
+        val readByteCount: Int = IOUtils.read(stream, bytes)
+        var firstBytes: Option[Array[Byte]] = null
+        var hasMore: Boolean = false
+        if (readByteCount < 0) {
+          firstBytes = None
+          hasMore = false
+        } else {
+          val readBytes: Array[Byte] = util.Arrays.copyOf(bytes, readByteCount)
+          hasMore = this.hasMore(stream)
+          stream.unread(readBytes)
+          firstBytes = Some(readBytes)
+        }
+        new ReadAheadInputStream(stream, firstBytes, hasMore)
+      }
+
+      foo(length)
+    }
+}
+
+private class ReadAheadInputStream private(val in: PushbackInputStream,
+                                           val firstBytes: Option[Array[Byte]],
+                                           val hasMore: Boolean)
+
 class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: Authenticator,
                              val attachmentManager: AttachmentManager,
                              val serializer: UploadSerializer) extends JMAPRoutes {
 
   class CancelledUploadException extends RuntimeException
+  class MaxFileSizeUploadException extends RuntimeException
 
   private val accountIdParam: String = "accountId"
   private val uploadURI = s"/upload/{$accountIdParam}/"
@@ -98,11 +147,16 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
           .flatMap(session => post(request, response, ContentType.of(contentType), session))
           .onErrorResume {
             case e: UnauthorizedException => SMono.fromPublisher(handleAuthenticationFailure(response, LOGGER, e))
+            case e: IllegalArgumentException => SMono.fromPublisher(handleIllegalArgumentException(response, e));
             case e: Throwable => SMono.fromPublisher(handleInternalError(response, LOGGER, e))
           }
           .asJava().`then`()
       case _ => response.status(BAD_REQUEST).send
     }
+  }
+
+  private def handleIllegalArgumentException(response: HttpServerResponse, e: IllegalArgumentException) = {
+    response.status(BAD_REQUEST).sendString(SMono.just(e.getMessage))
   }
 
   def post(request: HttpServerRequest, response: HttpServerResponse, contentType: ContentType, session: MailboxSession): SMono[Void] = {
@@ -125,12 +179,23 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
     }
   }
 
-  def handle(accountId: AccountId, contentType: ContentType, content: InputStream, mailboxSession: MailboxSession, response: HttpServerResponse): SMono[Void] =
-    uploadContent(accountId, contentType, content, mailboxSession)
+  def handle(accountId: AccountId, contentType: ContentType, content: InputStream, mailboxSession: MailboxSession, response: HttpServerResponse): SMono[Void] = {
+
+    SMono.fromCallable(() => ReadAheadInputStream.eager.of(content).length(JmapRfc8621Configuration.MAXSIZE_UPLOAD.get.value.toInt))
+      .flatMap(saveFileOrRaiseError(accountId, contentType, mailboxSession))
       .flatMap(uploadResponse => SMono.fromPublisher(response
-            .header(CONTENT_TYPE, uploadResponse.`type`.asString())
-            .status(CREATED)
-            .sendString(SMono.just(serializer.serialize(uploadResponse).toString()))))
+              .header(CONTENT_TYPE, uploadResponse.`type`.asString())
+              .status(CREATED)
+              .sendString(SMono.just(serializer.serialize(uploadResponse).toString()))))
+
+  }
+
+  private def saveFileOrRaiseError(accountId: AccountId, contentType: ContentType, mailboxSession: MailboxSession): (ReadAheadInputStream) => SMono[UploadResponse] = {
+    readAheadStream => readAheadStream.hasMore match {
+      case false => uploadContent(accountId, contentType, readAheadStream.in, mailboxSession)
+      case true => SMono.raiseError(new IllegalArgumentException("Attempt to upload exceed max size"))
+    }
+  }
 
   def uploadContent(accountId: AccountId, contentType: ContentType, inputStream: InputStream, session: MailboxSession): SMono[UploadResponse] =
     SMono

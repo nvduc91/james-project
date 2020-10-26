@@ -22,6 +22,9 @@ package org.apache.james.jmap.model
 import java.net.URL
 
 import org.apache.commons.configuration2.Configuration
+import org.apache.james.jmap.routes.UploadRoutes
+import org.apache.james.jmap.routes.UploadRoutes.Size
+
 
 object JmapRfc8621Configuration {
   val LOCALHOST_URL_PREFIX: String = "http://localhost"
@@ -29,8 +32,14 @@ object JmapRfc8621Configuration {
   var LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
   val URL_PREFIX_PROPERTIES: String = "url.prefix"
 
-  def from(configuration: Configuration): JmapRfc8621Configuration =
+  val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.size"
+  val UPLOAD_LIMIT_DEFAULT: Long = 30 * 1024 * 1024
+  var MAXSIZE_UPLOAD: Option[Size] = None
+
+  def from(configuration: Configuration): JmapRfc8621Configuration = {
+    MAXSIZE_UPLOAD = Some(UploadRoutes.sanitizeSize(configuration.getLong(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_DEFAULT)))
     JmapRfc8621Configuration(Option(configuration.getString(URL_PREFIX_PROPERTIES)).getOrElse(LOCALHOST_URL_PREFIX))
+  }
 }
 
 case class JmapRfc8621Configuration(urlPrefixString: String) {
