@@ -36,8 +36,8 @@ import org.junit.jupiter.api.{BeforeEach, Test}
 import play.api.libs.json.{JsString, Json}
 
 object UploadContract {
-  private val BIG_INPUT_STREAM: InputStream = new ByteArrayInputStream("123456789\r\n".repeat(1025).getBytes)
-  private val VALID_INPUT_STREAM: InputStream = new ByteArrayInputStream("123456789\r\n".repeat(29).getBytes)
+  private val BIG_INPUT_STREAM: InputStream = new ByteArrayInputStream("123456789\r\n".repeat(1024 * 1024 * 4).getBytes)
+  private val VALID_INPUT_STREAM: InputStream = new ByteArrayInputStream("123456789\r\n".repeat(1024 * 1024 * 3).getBytes)
 }
 
 trait UploadContract {
@@ -141,7 +141,7 @@ trait UploadContract {
       .body
       .asString
 
-    assertThat(response.equals("Attempt to upload exceed max size"))
+    assertThat(response.contains("Attempt to upload exceed max size"))
       .isTrue
   }
 
@@ -161,7 +161,7 @@ trait UploadContract {
       .body
       .asString
 
-    assertThat(response.equals("Attempt to upload exceed max size"))
+    assertThat(response.contains("Attempt to upload exceed max size"))
       .isTrue
   }
 

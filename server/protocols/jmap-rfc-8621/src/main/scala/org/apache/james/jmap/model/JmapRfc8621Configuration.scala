@@ -32,12 +32,13 @@ object JmapRfc8621Configuration {
   var LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
   val URL_PREFIX_PROPERTIES: String = "url.prefix"
 
-  val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.size"
-  val UPLOAD_LIMIT_DEFAULT: Long = 30 * 1024 * 1024
+  val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.mb.size"
+  val MB: Long =  1024 * 1024
+  val UPLOAD_LIMIT_30_MB: Long = 30
   var MAXSIZE_UPLOAD: Option[Size] = None
 
   def from(configuration: Configuration): JmapRfc8621Configuration = {
-    MAXSIZE_UPLOAD = Some(UploadRoutes.sanitizeSize(configuration.getLong(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_DEFAULT)))
+    MAXSIZE_UPLOAD = Some(UploadRoutes.sanitizeSize(configuration.getLong(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_30_MB) * MB ))
     JmapRfc8621Configuration(Option(configuration.getString(URL_PREFIX_PROPERTIES)).getOrElse(LOCALHOST_URL_PREFIX))
   }
 }
