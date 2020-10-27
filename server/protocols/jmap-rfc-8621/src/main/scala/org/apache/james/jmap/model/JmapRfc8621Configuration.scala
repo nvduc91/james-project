@@ -22,10 +22,10 @@ package org.apache.james.jmap.model
 import java.net.URL
 
 import org.apache.commons.configuration2.Configuration
-import org.apache.james.jmap.routes.UploadRoutes
-import org.apache.james.jmap.routes.UploadRoutes.Size
 import org.apache.james.util
 import org.apache.james.util.Size
+
+import scala.util.{Failure, Success, Try}
 
 
 object JmapRfc8621Configuration {
@@ -34,12 +34,16 @@ object JmapRfc8621Configuration {
   var LOCALHOST_CONFIGURATION: JmapRfc8621Configuration = from(LOCALHOST_URL_PREFIX)
   val URL_PREFIX_PROPERTIES: String = "url.prefix"
 
-  val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.mb.size"
-  val UPLOAD_LIMIT_30_MB: String = "30M"
+  val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.size"
+  val UPLOAD_LIMIT_30_MB: Long = 30 * 1024 * 1024
   var MAXSIZE_UPLOAD: Option[util.Size] = None
 
   def from(configuration: Configuration): JmapRfc8621Configuration = {
-    MAXSIZE_UPLOAD = Some(Size.parse(configuration.getString(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_30_MB)))
+    MAXSIZE_UPLOAD = Try(Size.parse(configuration.getString(UPLOAD_LIMIT_PROPERTIES))) match {
+      case Success(size: Size) => Some(size)
+      case Failure(_) => None
+    }
+
     JmapRfc8621Configuration(Option(configuration.getString(URL_PREFIX_PROPERTIES)).getOrElse(LOCALHOST_URL_PREFIX))
   }
 }

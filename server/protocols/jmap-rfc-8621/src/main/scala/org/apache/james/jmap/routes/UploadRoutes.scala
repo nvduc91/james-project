@@ -130,8 +130,12 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
   }
 
   def handle(accountId: AccountId, contentType: ContentType, content: InputStream, mailboxSession: MailboxSession, response: HttpServerResponse): SMono[Void] = {
+    val maxSize: Long = JmapRfc8621Configuration.MAXSIZE_UPLOAD match {
+      case Some(size) => size.asBytes()
+      case _ => JmapRfc8621Configuration.UPLOAD_LIMIT_30_MB
+    }
 
-    SMono.fromCallable(() => new LimitedInputStream(content, JmapRfc8621Configuration.MAXSIZE_UPLOAD.get.asBytes()) {
+    SMono.fromCallable(() => new LimitedInputStream(content, maxSize) {
       override def raiseError(max: Long, count: Long): Unit = if (count > max) {
         throw new IOException("Attempt to upload exceed max size")
       }})
@@ -143,8 +147,8 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
       .onErrorResume {
         case e: UncheckedIOException => SMono.fromPublisher(handleUncheckedIOException(response, e))
       }
-
   }
+
 
   def uploadContent(accountId: AccountId, contentType: ContentType, inputStream: InputStream, session: MailboxSession): SMono[UploadResponse] =
     SMono
