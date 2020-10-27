@@ -59,9 +59,11 @@
 
                     <dt><strong>url.prefix</strong></dt>
                     <dd>Optional. Configuration urlPrefix for JMAP routes.</dd>
+                    <dd>Default value: http://localhost.</dd>
 
                     <dt><strong>upload.max.size</strong></dt>
                     <dd>Optional. Configuration max size Upload in new JMAP-RFC-8621.</dd>
+                    <dd>Default value: 30MB.</dd>
                 </dl>
 
             </subsection>
