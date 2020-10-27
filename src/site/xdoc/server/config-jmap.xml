@@ -56,6 +56,12 @@
 
                     <dt><strong>jwt.publickeypem.url</strong></dt>
                     <dd>Optional. JWT tokens allows request to bypass authentication</dd>
+
+                    <dt><strong>url.prefix</strong></dt>
+                    <dd>Optional. Configuration urlPrefix for JMAP routes.</dd>
+
+                    <dt><strong>upload.max.size</strong></dt>
+                    <dd>Optional. Configuration max size Upload in new JMAP-RFC-8621.</dd>
                 </dl>
 
             </subsection>

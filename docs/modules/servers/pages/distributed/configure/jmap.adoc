@@ -29,6 +29,12 @@ This should not be the same keystore than the ones used by TLS based protocols.
 | jwt.publickeypem.url
 | Optional. JWT tokens allow request to bypass authentication
 
+| url.prefix
+| Optional. Configuration urlPrefix for JMAP routes.
+
+| upload.max.size
+| Optional. Configuration max size Upload in new JMAP-RFC-8621.
+
 |===
 
 == Wire tapping
