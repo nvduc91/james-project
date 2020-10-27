@@ -106,9 +106,8 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
     }
   }
 
-  private def handleUncheckedIOException(response: HttpServerResponse, e: UncheckedIOException) = {
+  private def handleUncheckedIOException(response: HttpServerResponse, e: UncheckedIOException) =
     response.status(BAD_REQUEST).sendString(SMono.just(e.getMessage))
-  }
 
   def post(request: HttpServerRequest, response: HttpServerResponse, contentType: ContentType, session: MailboxSession): SMono[Void] = {
     Id.validate(request.param(accountIdParam)) match {
@@ -132,9 +131,10 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
 
   def handle(accountId: AccountId, contentType: ContentType, content: InputStream, mailboxSession: MailboxSession, response: HttpServerResponse): SMono[Void] = {
 
-    SMono.fromCallable(() => new LimitedInputStream(content, JmapRfc8621Configuration.MAXSIZE_UPLOAD.get.value.toLong) {
-      override def raiseError(max: Long, count: Long): Unit = if (count > max) throw new IOException("Attempt to upload exceed max size")
-    })
+    SMono.fromCallable(() => new LimitedInputStream(content, JmapRfc8621Configuration.MAXSIZE_UPLOAD.get.asBytes()) {
+      override def raiseError(max: Long, count: Long): Unit = if (count > max) {
+        throw new IOException("Attempt to upload exceed max size")
+      }})
       .flatMap(uploadContent(accountId, contentType, _, mailboxSession))
       .flatMap(uploadResponse => SMono.fromPublisher(response
               .header(CONTENT_TYPE, uploadResponse.`type`.asString())

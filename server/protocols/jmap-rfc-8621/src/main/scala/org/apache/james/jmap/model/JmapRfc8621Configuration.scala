@@ -24,6 +24,8 @@ import java.net.URL
 import org.apache.commons.configuration2.Configuration
 import org.apache.james.jmap.routes.UploadRoutes
 import org.apache.james.jmap.routes.UploadRoutes.Size
+import org.apache.james.util
+import org.apache.james.util.Size
 
 
 object JmapRfc8621Configuration {
@@ -33,12 +35,11 @@ object JmapRfc8621Configuration {
   val URL_PREFIX_PROPERTIES: String = "url.prefix"
 
   val UPLOAD_LIMIT_PROPERTIES: String = "upload.max.mb.size"
-  val MB: Long =  1024 * 1024
-  val UPLOAD_LIMIT_30_MB: Long = 30
-  var MAXSIZE_UPLOAD: Option[Size] = None
+  val UPLOAD_LIMIT_30_MB: String = "30M"
+  var MAXSIZE_UPLOAD: Option[util.Size] = None
 
   def from(configuration: Configuration): JmapRfc8621Configuration = {
-    MAXSIZE_UPLOAD = Some(UploadRoutes.sanitizeSize(configuration.getLong(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_30_MB) * MB ))
+    MAXSIZE_UPLOAD = Some(Size.parse(configuration.getString(UPLOAD_LIMIT_PROPERTIES, UPLOAD_LIMIT_30_MB)))
     JmapRfc8621Configuration(Option(configuration.getString(URL_PREFIX_PROPERTIES)).getOrElse(LOCALHOST_URL_PREFIX))
   }
 }

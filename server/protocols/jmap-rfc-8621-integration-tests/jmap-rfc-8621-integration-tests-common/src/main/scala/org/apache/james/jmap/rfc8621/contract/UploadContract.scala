@@ -141,28 +141,8 @@ trait UploadContract {
       .body
       .asString
 
-    assertThat(response.contains("Attempt to upload exceed max size"))
-      .isTrue
-  }
-
-  @Test
-  def shouldRejectWhenUploadFilesExceedMaxSize(): Unit = {
-    val response: String = `given`
-      .basePath("")
-      .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
-      .contentType(ContentType.BINARY)
-      .body(VALID_INPUT_STREAM)
-      .body(VALID_INPUT_STREAM)
-    .when
-      .post(s"/upload/$ACCOUNT_ID/")
-    .`then`
-      .statusCode(SC_BAD_REQUEST)
-      .extract
-      .body
-      .asString
-
-    assertThat(response.contains("Attempt to upload exceed max size"))
-      .isTrue
+    assertThat(response)
+      .contains("Attempt to upload exceed max size")
   }
 
   @Test
