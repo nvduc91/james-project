@@ -68,7 +68,7 @@ public class Size {
     }
 
     public static Size of(Long value, Unit unit) {
-        Preconditions.checkArgument(value > 0, "Maxsize must be positive");
+        Preconditions.checkArgument(value >= 0, "Maxsize must be positive");
         return new Size(unit, value);
     }
 
