@@ -19,6 +19,7 @@
 
 package org.apache.james.util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.math.LongMath;
 
 /**
@@ -35,7 +36,7 @@ public class Size {
      * supported units : B ( 2^0 ), K ( 2^10 ), M ( 2^20 ), G ( 2^30 )
      * See  RFC822.SIZE
      */
-    private enum Unit {
+    public enum Unit {
         NoUnit,
         B,
         K,
@@ -49,6 +50,8 @@ public class Size {
     Long value;
 
     private Size(Unit unit, Long value) {
+        Preconditions.checkArgument(value > 0, "Maxsize must be positive");
+
         this.unit = unit;
         this.value = value;
     }
@@ -64,6 +67,10 @@ public class Size {
         Unit unit = getUnit(lastChar);
         String argWithoutUnit = removeLastCharIfNeeded(providedLongWithUnitString, unit);
         return new Size(unit, Long.parseLong(argWithoutUnit));
+    }
+
+    public static Size of(Long value, Unit unit) {
+        return new Size(unit, value);
     }
 
     public Unit getUnit() {

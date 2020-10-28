@@ -73,6 +73,7 @@ case class UploadResponse(accountId: AccountId,
                           size: Size)
 
 class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: Authenticator,
+                             val configuration: JmapRfc8621Configuration,
                              val attachmentManager: AttachmentManager,
                              val serializer: UploadSerializer) extends JMAPRoutes {
 
@@ -130,10 +131,7 @@ class UploadRoutes @Inject()(@Named(InjectionKeys.RFC_8621) val authenticator: A
   }
 
   def handle(accountId: AccountId, contentType: ContentType, content: InputStream, mailboxSession: MailboxSession, response: HttpServerResponse): SMono[Void] = {
-    val maxSize: Long = JmapRfc8621Configuration.MAXSIZE_UPLOAD match {
-      case Some(size) => size.asBytes()
-      case _ => JmapRfc8621Configuration.UPLOAD_LIMIT_30_MB
-    }
+    val maxSize: Long = configuration.maxUploadSize.asBytes()
 
     SMono.fromCallable(() => new LimitedInputStream(content, maxSize) {
       override def raiseError(max: Long, count: Long): Unit = if (count > max) {
